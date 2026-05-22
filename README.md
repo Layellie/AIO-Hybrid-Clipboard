@@ -1,5 +1,7 @@
 # AIO Hybrid Clipboard 
 
+![image](https://github.com/user-attachments/assets/uzun-bir-link...)
+
 A blazing fast, lightweight, and hybrid (C# WPF + C++20) clipboard manager. AIO Hybrid Clipboard not only tracks your copied texts and images but also features a built-in, asynchronous C++ WinRT OCR engine to instantly extract text from your screenshot captures.
 
 ## Features
