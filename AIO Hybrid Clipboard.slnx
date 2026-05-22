@@ -1,0 +1,11 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="AIO Clipboard &amp; Search/AIO_Hybrid_Clipboard.csproj">
+    <Platform Solution="Debug|x64" Project="x64" />
+  </Project>
+  <Project Path="AIO_SearchEngine/AIO_SearchEngine.vcxproj" />
+</Solution>

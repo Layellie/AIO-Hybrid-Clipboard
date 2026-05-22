@@ -1,0 +1,194 @@
+﻿<Window x:Class="AIO_Hybrid_Clipboard.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:AIO_Hybrid_Clipboard"
+        mc:Ignorable="d"
+        Title="AIO Hybrid Clipboard" Height="250" Width="1000"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        Topmost="True" ShowInTaskbar="False">
+
+    <Window.Resources>
+        <Style TargetType="{x:Type ScrollBar}">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Width" Value="6"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ScrollBar}">
+                        <Grid x:Name="Bg" Background="Transparent" SnapsToDevicePixels="true">
+                            <Track x:Name="PART_Track" IsDirectionReversed="true" IsEnabled="{TemplateBinding IsEnabled}">
+                                <Track.Thumb>
+                                    <Thumb x:Name="Thumb">
+                                        <Thumb.Template>
+                                            <ControlTemplate TargetType="{x:Type Thumb}">
+                                                <Border Background="#D9000000" CornerRadius="3" BorderBrush="#333333" BorderThickness="1"/>
+                                            </ControlTemplate>
+                                        </Thumb.Template>
+                                    </Thumb>
+                                </Track.Thumb>
+                            </Track>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="{x:Type ListBox}">
+            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto"/>
+            <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Disabled"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="5"/>
+        </Style>
+
+        <Style x:Key="TrayContextMenuStyle" TargetType="{x:Type ContextMenu}">
+            <Setter Property="Background" Value="#F218191C"/>
+            <Setter Property="BorderBrush" Value="#2F3136"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Width" Value="150"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ContextMenu}">
+                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="8">
+                            <StackPanel IsItemsHost="True" Margin="0,5,0,5"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="TrayMenuItemStyle" TargetType="{x:Type MenuItem}">
+            <Setter Property="Foreground" Value="#B9BBBE"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Padding" Value="18,8,18,8"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type MenuItem}">
+                        <Border x:Name="ItemContainer" CornerRadius="5" Margin="5,1,5,1" Background="Transparent" SnapsToDevicePixels="True">
+                            <ContentPresenter ContentSource="Header" Margin="{TemplateBinding Padding}" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ItemContainer" Property="Background" Value="#4F545C"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <ContextMenu x:Key="DiscordTrayMenu" Style="{StaticResource TrayContextMenuStyle}">
+            <MenuItem Header="Open" Style="{StaticResource TrayMenuItemStyle}" Click="TrayMenu_Open_Click"/>
+            <MenuItem Header="Exit" Style="{StaticResource TrayMenuItemStyle}" Click="TrayMenu_Close_Click"/>
+        </ContextMenu>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="55"/>
+            <RowDefinition Height="105"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Margin="10,5,10,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="45"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Background="#D92D2D2D" CornerRadius="15" Margin="4" BorderBrush="#444444" BorderThickness="1">
+                <TextBox Name="TxtSearch" Background="Transparent" Foreground="White" 
+                         BorderThickness="0" FontSize="16" Padding="12,8,12,8" 
+                         CaretBrush="White" VerticalAlignment="Center"/>
+            </Border>
+
+            <Button Grid.Column="1" Name="BtnSettings" Click="BtnSettings_Click" Margin="4" Background="#D92D2D2D" BorderBrush="#444444" BorderThickness="1" Foreground="White">
+                <Button.Resources>
+                    <Style TargetType="Border">
+                        <Setter Property="CornerRadius" Value="15"/>
+                    </Style>
+                </Button.Resources>
+                <TextBlock Text="⚙" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Button>
+        </Grid>
+
+        <Grid Grid.Row="1" Margin="10,0,10,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Background="#D9252525" CornerRadius="15" Margin="4" BorderBrush="#444444" BorderThickness="1">
+                <ListBox Name="LstResults" PreviewMouseWheel="ListBox_PreviewMouseWheel">
+                    <ListBox.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal"/>
+                        </ItemsPanelTemplate>
+                    </ListBox.ItemsPanel>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Border Background="#D9333333" CornerRadius="10" Padding="12,8,12,8" Margin="4,0,4,0" BorderBrush="#555555" BorderThickness="1"
+                                    PreviewMouseLeftButtonDown="ResultItem_PreviewMouseLeftButtonDown" Cursor="Hand">
+
+                                <TextBlock Text="{Binding}" Foreground="#E0E0E0" MaxWidth="180" TextTrimming="CharacterEllipsis"
+                                           ToolTipService.InitialShowDelay="50"
+                                           ToolTipService.BetweenShowDelay="0"
+                                           ToolTipService.ShowDuration="60000">
+                                    <TextBlock.ToolTip>
+                                        <ToolTip Background="Transparent" BorderThickness="0" Padding="0">
+                                            <Border Background="#F218191C" CornerRadius="8" BorderBrush="#2F3136" BorderThickness="1" Padding="12,10">
+                                                <TextBlock Text="{Binding}" Foreground="White" TextWrapping="Wrap" MaxWidth="400" FontSize="13"/>
+                                            </Border>
+                                        </ToolTip>
+                                    </TextBlock.ToolTip>
+                                </TextBlock>
+                            </Border>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Border>
+
+            <Border Grid.Column="1" Background="#D9252525" CornerRadius="15" Margin="4" BorderBrush="#444444" BorderThickness="1">
+                <ListBox Name="LstScreenshots" PreviewMouseWheel="ListBox_PreviewMouseWheel">
+                    <ListBox.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal"/>
+                        </ItemsPanelTemplate>
+                    </ListBox.ItemsPanel>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Border BorderBrush="#555555" BorderThickness="1" CornerRadius="8" Margin="4,0,4,0" Background="#111111" ClipToBounds="True" Padding="1"
+                                    PreviewMouseLeftButtonDown="Screenshot_PreviewMouseLeftButtonDown"
+                                    PreviewMouseMove="Screenshot_PreviewMouseMove"
+                                    PreviewMouseLeftButtonUp="Screenshot_PreviewMouseLeftButtonUp"
+                                    Cursor="Hand">
+                                <Image Source="{Binding Image}" Width="110" Height="65" Stretch="UniformToFill">
+                                    <Image.ToolTip>
+                                        <ToolTip Content="{Binding Name}" Background="#F0000000" Foreground="White" BorderBrush="#555555"/>
+                                    </Image.ToolTip>
+                                </Image>
+                            </Border>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Border>
+        </Grid>
+
+        <Border Grid.Row="2" Name="PnlSettingsDrawer" Visibility="Collapsed" Background="#E6222222" CornerRadius="15" Margin="14,5,14,5" Padding="15" BorderBrush="#555555" BorderThickness="1">
+            <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,12" HorizontalAlignment="Center">
+                    <CheckBox Name="ChkHideOnCopy" IsChecked="False" Content="Automatically hide menu on new selection" Foreground="White" Margin="0,0,25,0"/>
+                    <CheckBox Name="ChkStartWithWindows" IsChecked="False" Content="Start with Windows" Foreground="White" Checked="ChkStartWithWindows_Checked" Unchecked="ChkStartWithWindows_Unchecked"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <TextBlock Text="Shortcut Key: " Foreground="White" VerticalAlignment="Center"/>
+                    <ComboBox Name="CmbModifier" Width="90" Margin="5,0,5,0" SelectionChanged="HotkeyChanged"/>
+                    <TextBlock Text="+" Foreground="White" VerticalAlignment="Center"/>
+                    <ComboBox Name="CmbKey" Width="90" Margin="5,0,0,0" SelectionChanged="HotkeyChanged"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>
