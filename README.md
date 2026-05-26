@@ -20,7 +20,8 @@ A blazing fast, lightweight, and hybrid (C# WPF + C++20) clipboard manager. AIO 
 
 ## Default Shortcuts
 * **Summon Launcher:** `ALT + SPACE`
-* **Capture Screen (Windows Default):** `WIN + SHIFT + S` 
+* **Capture Screen (Windows Default):** `WIN + SHIFT + S`
+* * **Quick-paste hotkeys:** `ALT + 1, ALT + 2, ALT + 3`
 
 ## Tech Stack
 * **Frontend:** C# / .NET / WPF
