@@ -92,4 +92,4 @@ The solution contains two projects:
 
 ## License
 
-[MIT](LICENSE) — © 2026 SAMET KAŞMER
+[MIT](LICENSE) — © 2026 SAMET KAŞMER AKA LAYE77IE
