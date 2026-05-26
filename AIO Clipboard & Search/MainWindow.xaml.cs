@@ -7,6 +7,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -40,6 +41,26 @@ namespace AIO_Hybrid_Clipboard
         private const uint LR_LOADFROMFILE = 0x00000010;
         [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hWnd);
 
+        // --- SEND INPUT (QUICK PASTE) ---
+        [DllImport("user32.dll")]
+        private static extern uint SendInput(uint nInputs, [MarshalAs(UnmanagedType.LPArray), In] INPUT[] pInputs, int cbSize);
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct INPUT { public uint type; public InputUnion U; }
+
+        [StructLayout(LayoutKind.Explicit)]
+        private struct InputUnion
+        {
+            [FieldOffset(0)] public MOUSEINPUT mi;
+            [FieldOffset(0)] public KEYBDINPUT ki;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct MOUSEINPUT { public int dx, dy; public uint mouseData, dwFlags, time; public IntPtr dwExtraInfo; }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct KEYBDINPUT { public ushort wVk, wScan; public uint dwFlags, time; public IntPtr dwExtraInfo; }
+
         // --- GLOBAL HOTKEY & CLIPBOARD API ---
         [DllImport("user32.dll", SetLastError = true)] private static extern bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
         [DllImport("user32.dll", SetLastError = true)] private static extern bool UnregisterHotKey(IntPtr hWnd, int id);
@@ -50,7 +71,93 @@ namespace AIO_Hybrid_Clipboard
         private const int NIF_MESSAGE = 0x00000001; private const int NIF_ICON = 0x00000002; private const int NIF_TIP = 0x00000004;
         private const int WM_TRAYICON = 0x0400 + 100; private const int WM_LBUTTONUP = 0x0202; private const int WM_RBUTTONUP = 0x0205;
         private static readonly IntPtr IDI_APPLICATION = new IntPtr(32512);
-        private const int WM_HOTKEY = 0x0312; private const int WM_CLIPBOARDUPDATE = 0x031D; private const int HOTKEY_ID = 9000;
+        private const int WM_HOTKEY = 0x0312; private const int WM_CLIPBOARDUPDATE = 0x031D;
+        private const int HOTKEY_ID = 9000;
+        private const int QUICKPASTE_ID_1 = 9001;
+        private const int QUICKPASTE_ID_2 = 9002;
+        private const int QUICKPASTE_ID_3 = 9003;
+
+        // --- LOCALIZATION ---
+        private enum AppLanguage { English, Turkish }
+        private AppLanguage _currentLanguage = AppLanguage.English;
+
+        private static readonly Dictionary<AppLanguage, Dictionary<string, string>> _strings = new()
+        {
+            [AppLanguage.English] = new()
+            {
+                ["HideOnCopy"]        = "Automatically hide menu on new selection",
+                ["StartWithWindows"]  = "Start with Windows",
+                ["ShortcutKey"]       = "Shortcut Key: ",
+                ["Language"]          = "Language: ",
+                ["TrayOpen"]          = "Open",
+                ["TrayExit"]          = "Exit",
+                ["InitialMsg"]        = "AIO OCR Clipboard Active! Capture images to process... 🚀",
+                ["OcrError"]          = "OCR Error",
+                ["OcrException"]      = "OCR Processing Exception: ",
+            },
+            [AppLanguage.Turkish] = new()
+            {
+                ["HideOnCopy"]        = "Seçimde menüyü otomatik gizle",
+                ["StartWithWindows"]  = "Windows ile başlat",
+                ["ShortcutKey"]       = "Kısayol Tuşu: ",
+                ["Language"]          = "Dil: ",
+                ["TrayOpen"]          = "Aç",
+                ["TrayExit"]          = "Çıkış",
+                ["InitialMsg"]        = "AIO OCR Pano Aktif! İşlemek için görüntü yakalayın... 🚀",
+                ["OcrError"]          = "OCR Hatası",
+                ["OcrException"]      = "OCR İşleme Hatası: ",
+            }
+        };
+
+        private string T(string key) =>
+            _strings[_currentLanguage].TryGetValue(key, out var val) ? val : key;
+
+        private void LoadSettings()
+        {
+            try
+            {
+                using var rk = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\AIO_ClipboardSearch");
+                if (rk == null) return;
+                if (rk.GetValue("Language") is string lang && Enum.TryParse<AppLanguage>(lang, out var parsed))
+                    _currentLanguage = parsed;
+                if (rk.GetValue("HotkeyModifier") is int mod) CurrentModifier = (uint)mod;
+                if (rk.GetValue("HotkeyKey") is int key) CurrentKey = (uint)key;
+            }
+            catch { }
+        }
+
+        private void SaveSettings()
+        {
+            try
+            {
+                using var rk = Registry.CurrentUser.CreateSubKey(@"SOFTWARE\AIO_ClipboardSearch");
+                rk?.SetValue("Language", _currentLanguage.ToString());
+                rk?.SetValue("HotkeyModifier", (int)CurrentModifier, RegistryValueKind.DWord);
+                rk?.SetValue("HotkeyKey", (int)CurrentKey, RegistryValueKind.DWord);
+            }
+            catch { }
+        }
+
+        private void ApplyLanguage()
+        {
+            ChkHideOnCopy.Content       = T("HideOnCopy");
+            ChkStartWithWindows.Content  = T("StartWithWindows");
+            TxtShortcutLabel.Text        = T("ShortcutKey");
+            TxtLanguageLabel.Text        = T("Language");
+
+            if (this.Resources["DiscordTrayMenu"] is ContextMenu trayMenu)
+            {
+                if (trayMenu.Items[0] is MenuItem open) open.Header = T("TrayOpen");
+                if (trayMenu.Items[1] is MenuItem exit) exit.Header = T("TrayExit");
+            }
+        }
+
+        private void CmbLanguage_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            _currentLanguage = CmbLanguage.SelectedIndex == 1 ? AppLanguage.Turkish : AppLanguage.English;
+            ApplyLanguage();
+            SaveSettings();
+        }
 
         // --- DATA COLLECTIONS ---
         private List<string> ClipboardHistory = new List<string>();
@@ -66,11 +173,19 @@ namespace AIO_Hybrid_Clipboard
         {
             InitializeComponent();
             this.PreviewKeyDown += MainWindow_PreviewKeyDown;
+            LoadSettings();
             PopulateSettingsUI();
             CheckRegistryStartup();
 
-            ClipboardHistory.Add("AIO OCR Clipboard Active! Capture images to process... 🚀");
+            LoadSession();
+            if (ClipboardHistory.Count == 0)
+                ClipboardHistory.Add(T("InitialMsg"));
+
             TxtSearch.TextChanged += TxtSearch_TextChanged;
+
+            // Wire after SelectedIndex is set to avoid firing during init
+            CmbLanguage.SelectionChanged += CmbLanguage_SelectionChanged;
+            ApplyLanguage();
         }
 
         protected override void OnSourceInitialized(EventArgs e)
@@ -135,6 +250,8 @@ namespace AIO_Hybrid_Clipboard
 
         private async void Screenshot_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
+            if (ChkEdit?.IsChecked == true) return; // Edit mode: ListBox handles multi-selection
+
             Point currentPos = e.GetPosition(null);
             if (Math.Abs(currentPos.X - _dragStartPoint.X) < SystemParameters.MinimumHorizontalDragDistance &&
                 Math.Abs(currentPos.Y - _dragStartPoint.Y) < SystemParameters.MinimumVerticalDragDistance)
@@ -187,7 +304,7 @@ namespace AIO_Hybrid_Clipboard
                 catch (Exception ex)
                 {
                     Application.Current.Dispatcher.BeginInvoke(new Action(() => {
-                        MessageBox.Show("OCR Processing Exception: " + ex.Message, "OCR Error");
+                        MessageBox.Show(T("OcrException") + ex.Message, T("OcrError"));
                     }));
                 }
             });
@@ -201,10 +318,13 @@ namespace AIO_Hybrid_Clipboard
                 if (clickType == WM_RBUTTONUP) { ShowTrayContextMenu(); handled = true; }
                 else if (clickType == WM_LBUTTONUP) { ShowLauncher(); handled = true; }
             }
-            else if (msg == WM_HOTKEY && wParam.ToInt32() == HOTKEY_ID)
+            else if (msg == WM_HOTKEY)
             {
-                ToggleLauncher();
-                handled = true;
+                int hotkeyId = wParam.ToInt32();
+                if (hotkeyId == HOTKEY_ID) { ToggleLauncher(); handled = true; }
+                else if (hotkeyId == QUICKPASTE_ID_1) { QuickPaste(0); handled = true; }
+                else if (hotkeyId == QUICKPASTE_ID_2) { QuickPaste(1); handled = true; }
+                else if (hotkeyId == QUICKPASTE_ID_3) { QuickPaste(2); handled = true; }
             }
             else if (msg == WM_CLIPBOARDUPDATE)
             {
@@ -321,20 +441,92 @@ namespace AIO_Hybrid_Clipboard
         {
             UnregisterHotKey(_windowHandle, HOTKEY_ID);
             RegisterHotKey(_windowHandle, HOTKEY_ID, CurrentModifier, CurrentKey);
+
+            UnregisterHotKey(_windowHandle, QUICKPASTE_ID_1);
+            UnregisterHotKey(_windowHandle, QUICKPASTE_ID_2);
+            UnregisterHotKey(_windowHandle, QUICKPASTE_ID_3);
+            RegisterHotKey(_windowHandle, QUICKPASTE_ID_1, CurrentModifier, 0x31); // +1
+            RegisterHotKey(_windowHandle, QUICKPASTE_ID_2, CurrentModifier, 0x32); // +2
+            RegisterHotKey(_windowHandle, QUICKPASTE_ID_3, CurrentModifier, 0x33); // +3
         }
 
         private void PopulateSettingsUI()
         {
-            CmbModifier.Items.Add(new KeyValueProxy("ALT", 0x0001));
-            CmbModifier.Items.Add(new KeyValueProxy("CTRL", 0x0002));
-            CmbModifier.Items.Add(new KeyValueProxy("SHIFT", 0x0004));
-            CmbModifier.SelectedIndex = 0;
+            CmbLanguage.SelectedIndex = _currentLanguage == AppLanguage.Turkish ? 1 : 0;
+            UpdateHotkeyDisplay();
+        }
 
-            CmbKey.Items.Add(new KeyValueProxy("SPACE", 0x20));
-            CmbKey.Items.Add(new KeyValueProxy("ENTER", 0x0D));
-            CmbKey.Items.Add(new KeyValueProxy("F4", 0x73));
-            CmbKey.Items.Add(new KeyValueProxy("TAB", 0x09));
-            CmbKey.SelectedIndex = 0;
+        // --- HOTKEY CAPTURE ---
+        private bool _isCapturingHotkey = false;
+
+        private void UpdateHotkeyDisplay()
+        {
+            if (TxtHotkeyCapture == null) return;
+            var parts = new List<string>();
+            if ((CurrentModifier & 0x0002) != 0) parts.Add("CTRL");
+            if ((CurrentModifier & 0x0001) != 0) parts.Add("ALT");
+            if ((CurrentModifier & 0x0004) != 0) parts.Add("SHIFT");
+            Key k = KeyInterop.KeyFromVirtualKey((int)CurrentKey);
+            parts.Add(k.ToString().ToUpperInvariant());
+            TxtHotkeyCapture.Text = string.Join(" + ", parts);
+
+            if (TxtQuickPasteHint == null) return;
+            string mod = string.Join("+", parts.Take(parts.Count - 1));
+            TxtQuickPasteHint.Text = $"Quick paste: {mod}+1 / {mod}+2 / {mod}+3";
+        }
+
+        private void TxtHotkeyCapture_GotFocus(object sender, RoutedEventArgs e)
+        {
+            _isCapturingHotkey = true;
+            TxtHotkeyCapture.Text = "Press keys...";
+        }
+
+        private void TxtHotkeyCapture_LostFocus(object sender, RoutedEventArgs e)
+        {
+            _isCapturingHotkey = false;
+            UpdateHotkeyDisplay();
+        }
+
+        private void TxtHotkeyCapture_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (!_isCapturingHotkey) return;
+
+            Key key = e.Key == Key.System ? e.SystemKey : e.Key;
+
+            if (key == Key.Escape)
+            {
+                _isCapturingHotkey = false;
+                UpdateHotkeyDisplay();
+                Keyboard.ClearFocus();
+                e.Handled = true;
+                return;
+            }
+
+            // Ignore lone modifier keys
+            if (key is Key.LeftShift or Key.RightShift or Key.LeftCtrl or Key.RightCtrl
+                     or Key.LeftAlt or Key.RightAlt or Key.LWin or Key.RWin)
+            {
+                e.Handled = true;
+                return;
+            }
+
+            uint modifier = 0;
+            if (Keyboard.IsKeyDown(Key.LeftAlt)   || Keyboard.IsKeyDown(Key.RightAlt))   modifier |= 0x0001;
+            if (Keyboard.IsKeyDown(Key.LeftCtrl)  || Keyboard.IsKeyDown(Key.RightCtrl))  modifier |= 0x0002;
+            if (Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift)) modifier |= 0x0004;
+
+            if (modifier == 0) { e.Handled = true; return; } // Require at least one modifier
+
+            CurrentModifier = modifier;
+            CurrentKey = (uint)KeyInterop.VirtualKeyFromKey(key);
+
+            if (_windowHandle != IntPtr.Zero) BindGlobalHotkey();
+            SaveSettings();
+
+            _isCapturingHotkey = false;
+            UpdateHotkeyDisplay();
+            Keyboard.ClearFocus();
+            e.Handled = true;
         }
 
         private void ShowTrayContextMenu()
@@ -433,6 +625,8 @@ namespace AIO_Hybrid_Clipboard
 
         private void ResultItem_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
+            if (ChkEdit?.IsChecked == true) return; // Edit mode: ListBox handles multi-selection
+
             var border = sender as Border;
             if (border != null && border.DataContext != null)
             {
@@ -455,31 +649,169 @@ namespace AIO_Hybrid_Clipboard
             if (ChkHideOnCopy.IsChecked == true) this.Hide();
         }
 
+        // --- QUICK PASTE ---
+        private void QuickPaste(int index)
+        {
+            if (ClipboardHistory.Count <= index) return;
+            string text = ClipboardHistory[index];
+            if (string.IsNullOrEmpty(text)) return;
+            try
+            {
+                RemoveClipboardFormatListener(_windowHandle);
+                Clipboard.SetText(text);
+                AddClipboardFormatListener(_windowHandle);
+                SimulatePaste();
+            }
+            catch { }
+        }
+
+        private static void SimulatePaste()
+        {
+            const uint INPUT_KEYBOARD = 1;
+            const uint KEYEVENTF_KEYUP = 0x0002;
+            const ushort VK_CONTROL = 0x11;
+            const ushort VK_V = 0x56;
+            var inputs = new INPUT[]
+            {
+                new INPUT { type = INPUT_KEYBOARD, U = new InputUnion { ki = new KEYBDINPUT { wVk = VK_CONTROL } } },
+                new INPUT { type = INPUT_KEYBOARD, U = new InputUnion { ki = new KEYBDINPUT { wVk = VK_V } } },
+                new INPUT { type = INPUT_KEYBOARD, U = new InputUnion { ki = new KEYBDINPUT { wVk = VK_V,       dwFlags = KEYEVENTF_KEYUP } } },
+                new INPUT { type = INPUT_KEYBOARD, U = new InputUnion { ki = new KEYBDINPUT { wVk = VK_CONTROL, dwFlags = KEYEVENTF_KEYUP } } },
+            };
+            SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(typeof(INPUT)));
+        }
+
+        private void ChkEdit_Checked(object sender, RoutedEventArgs e)
+        {
+            LstResults.SelectionMode = SelectionMode.Multiple;
+            LstScreenshots.SelectionMode = SelectionMode.Multiple;
+        }
+
+        private void ChkEdit_Unchecked(object sender, RoutedEventArgs e)
+        {
+            LstResults.SelectedItems.Clear();
+            LstScreenshots.SelectedItems.Clear();
+            LstResults.SelectionMode = SelectionMode.Single;
+            LstScreenshots.SelectionMode = SelectionMode.Single;
+        }
+
+        private void BtnDelete_Click(object sender, RoutedEventArgs e)
+        {
+            var selectedTexts = LstResults.SelectedItems.Cast<string>().ToList();
+            foreach (var text in selectedTexts)
+                ClipboardHistory.Remove(text);
+
+            var selectedShots = LstScreenshots.SelectedItems.Cast<ScreenshotModel>().ToList();
+            foreach (var shot in selectedShots)
+            {
+                try { File.Delete(shot.Path); } catch { }
+                ScreenshotHistory.Remove(shot);
+            }
+
+            if (selectedTexts.Count == 0 && selectedShots.Count == 0) return;
+
+            string query = TxtSearch.Text.Trim();
+            if (string.IsNullOrEmpty(query))
+            {
+                LstResults.ItemsSource = null;
+                LstResults.ItemsSource = ClipboardHistory;
+            }
+            else
+            {
+                LstResults.ItemsSource = ClipboardHistory
+                    .Where(t => t.Contains(query, StringComparison.OrdinalIgnoreCase)).ToList();
+                LstScreenshots.ItemsSource = ScreenshotHistory
+                    .Where(s => s.Name.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                                s.OcrText.Contains(query, StringComparison.OrdinalIgnoreCase)).ToList();
+            }
+        }
+
         private void BtnSettings_Click(object sender, RoutedEventArgs e) => PnlSettingsDrawer.Visibility = PnlSettingsDrawer.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
 
-        private void HotkeyChanged(object sender, SelectionChangedEventArgs e)
+        // --- SESSION PERSISTENCE ---
+        private static string SessionFilePath =>
+            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "AIO_Cache", "session.json");
+
+        private void SaveSession()
         {
-            if (CmbModifier?.SelectedItem is KeyValueProxy mod && CmbKey?.SelectedItem is KeyValueProxy key)
+            try
             {
-                CurrentModifier = mod.Value; CurrentKey = key.Value;
-                if (_windowHandle != IntPtr.Zero) BindGlobalHotkey();
+                string cacheFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "AIO_Cache");
+                if (!Directory.Exists(cacheFolder)) Directory.CreateDirectory(cacheFolder);
+
+                var data = new
+                {
+                    ClipboardEntries = ClipboardHistory.ToList(),
+                    Screenshots = ScreenshotHistory.Select(s => new { s.Name, s.Path, s.OcrText }).ToList()
+                };
+                File.WriteAllText(SessionFilePath, JsonSerializer.Serialize(data));
             }
+            catch { }
+        }
+
+        private void LoadSession()
+        {
+            try
+            {
+                if (!File.Exists(SessionFilePath)) return;
+                using var doc = JsonDocument.Parse(File.ReadAllText(SessionFilePath));
+                var root = doc.RootElement;
+
+                if (root.TryGetProperty("ClipboardEntries", out var entries))
+                {
+                    foreach (var entry in entries.EnumerateArray())
+                    {
+                        string? text = entry.GetString();
+                        if (!string.IsNullOrEmpty(text))
+                            ClipboardHistory.Add(text);
+                    }
+                }
+
+                if (root.TryGetProperty("Screenshots", out var screenshots))
+                {
+                    foreach (var s in screenshots.EnumerateArray())
+                    {
+                        string name    = s.TryGetProperty("Name",    out var n) ? n.GetString() ?? "" : "";
+                        string path    = s.TryGetProperty("Path",    out var p) ? p.GetString() ?? "" : "";
+                        string ocrText = s.TryGetProperty("OcrText", out var o) ? o.GetString() ?? "" : "";
+
+                        if (!File.Exists(path)) continue;
+
+                        BitmapImage img;
+                        try
+                        {
+                            img = new BitmapImage();
+                            img.BeginInit();
+                            img.CacheOption = BitmapCacheOption.OnLoad;
+                            img.UriSource = new Uri(path, UriKind.Absolute);
+                            img.EndInit();
+                            img.Freeze();
+                        }
+                        catch { continue; }
+
+                        ScreenshotHistory.Add(new ScreenshotModel
+                        {
+                            Name = name,
+                            Path = path,
+                            Image = img,
+                            OcrText = ocrText
+                        });
+                    }
+                }
+            }
+            catch { }
         }
 
         protected override void OnClosed(EventArgs e)
         {
+            SaveSession();
             Shell_NotifyIcon(NIM_DELETE, ref _nid);
             UnregisterHotKey(_windowHandle, HOTKEY_ID);
+            UnregisterHotKey(_windowHandle, QUICKPASTE_ID_1);
+            UnregisterHotKey(_windowHandle, QUICKPASTE_ID_2);
+            UnregisterHotKey(_windowHandle, QUICKPASTE_ID_3);
             RemoveClipboardFormatListener(_windowHandle);
             base.OnClosed(e);
-        }
-
-        public class KeyValueProxy
-        {
-            public string Name { get; set; }
-            public uint Value { get; set; }
-            public KeyValueProxy(string name, uint value) { Name = name; Value = value; }
-            public override string ToString() => Name;
         }
 
         public class ScreenshotModel

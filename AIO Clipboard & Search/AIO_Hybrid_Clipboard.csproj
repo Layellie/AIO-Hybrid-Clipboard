@@ -9,7 +9,12 @@
     <UseWPF>true</UseWPF>
     <Platforms>AnyCPU;x64</Platforms>
     <AssemblyTitle>AIO_Hybrid_Clipboard</AssemblyTitle>
+    <ApplicationIcon>app_icon.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="app_icon.ico" />
+  </ItemGroup>
 
   <ItemGroup>
     <None Update="app_icon.ico">
