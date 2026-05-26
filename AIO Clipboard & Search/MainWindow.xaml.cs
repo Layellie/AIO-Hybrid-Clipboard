@@ -39,6 +39,7 @@ namespace AIO_Hybrid_Clipboard
         private const uint IMAGE_ICON = 1;
         private const uint LR_LOADFROMFILE = 0x00000010;
         [DllImport("user32.dll")] private static extern bool SetForegroundWindow(IntPtr hWnd);
+        [DllImport("user32.dll")] private static extern bool DestroyIcon(IntPtr hIcon);
 
         // --- SEND INPUT (QUICK PASTE) ---
         [DllImport("user32.dll")]
@@ -164,6 +165,7 @@ namespace AIO_Hybrid_Clipboard
 
         private uint CurrentModifier = 0x0001; private uint CurrentKey = 0x20; int ClipboardLimit = 15;
         private IntPtr _windowHandle;
+        private HwndSource? _hwndSource;
         private DateTime _lastScreenshotTime = DateTime.MinValue;
         private NOTIFYICONDATA _nid;
         private Point _dragStartPoint;
@@ -199,8 +201,8 @@ namespace AIO_Hybrid_Clipboard
             AddClipboardFormatListener(_windowHandle);
             InitializeTrayIcon();
 
-            HwndSource source = HwndSource.FromHwnd(_windowHandle);
-            source.AddHook(HwndHook);
+            _hwndSource = HwndSource.FromHwnd(_windowHandle);
+            _hwndSource.AddHook(HwndHook);
 
             LstResults.ItemsSource = ClipboardHistory;
             LstScreenshots.ItemsSource = ScreenshotHistory;
@@ -391,7 +393,9 @@ namespace AIO_Hybrid_Clipboard
                                 {
                                     StringBuilder sbText = new StringBuilder(8192);
                                     ProcessImageOCR(pixels, width, height, stride, sbText, sbText.Capacity);
-                                    newModel.OcrText = sbText.ToString().Trim();
+                                    string ocrResult = sbText.ToString().Trim();
+                                    Application.Current.Dispatcher.BeginInvoke(
+                                        new Action(() => newModel.OcrText = ocrResult));
                                 }
                                 catch { }
                             });
@@ -798,6 +802,8 @@ namespace AIO_Hybrid_Clipboard
             UnregisterHotKey(_windowHandle, QUICKPASTE_ID_2);
             UnregisterHotKey(_windowHandle, QUICKPASTE_ID_3);
             RemoveClipboardFormatListener(_windowHandle);
+            _hwndSource?.RemoveHook(HwndHook);
+            if (_nid.hIcon != IntPtr.Zero) DestroyIcon(_nid.hIcon);
             base.OnClosed(e);
         }
 

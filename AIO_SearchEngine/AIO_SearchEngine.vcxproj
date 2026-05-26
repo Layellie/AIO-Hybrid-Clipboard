@@ -129,7 +129,7 @@
       <EnableSegmentHeap>true</EnableSegmentHeap>
     </Manifest>
     <PostBuildEvent>
-      <Command>copy "$(OutDir)AIO_SearchEngine.dll" "$(SolutionDir)AIO_Hybrid_Clipboard\bin\x64\Debug\net10.0-windows\" /Y</Command>
+      <Command>copy "$(OutDir)AIO_SearchEngine.dll" "$(SolutionDir)AIO Clipboard &amp; Search\bin\x64\$(Configuration)\net10.0-windows\" /Y</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -152,6 +152,9 @@
     <Manifest>
       <EnableSegmentHeap>true</EnableSegmentHeap>
     </Manifest>
+    <PostBuildEvent>
+      <Command>copy "$(OutDir)AIO_SearchEngine.dll" "$(SolutionDir)AIO Clipboard &amp; Search\bin\x64\$(Configuration)\net10.0-windows\" /Y</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="framework.h" />
