@@ -1,7 +1,7 @@
 ﻿using System.Threading;
 using System.Windows;
 
-namespace AIO_Clipboard___Search
+namespace AIO_Hybrid_Clipboard
 {
     public partial class App : Application
     {
@@ -10,7 +10,6 @@ namespace AIO_Clipboard___Search
         protected override void OnStartup(StartupEventArgs e)
         {
             _mutex = new Mutex(true, "AIO_Hybrid_Clipboard_SingleInstance", out bool isNewInstance);
-
             if (!isNewInstance)
             {
                 MessageBox.Show(
@@ -21,8 +20,8 @@ namespace AIO_Clipboard___Search
                 Shutdown();
                 return;
             }
-
             base.OnStartup(e);
+            new MainWindow().Show();
         }
 
         protected override void OnExit(ExitEventArgs e)

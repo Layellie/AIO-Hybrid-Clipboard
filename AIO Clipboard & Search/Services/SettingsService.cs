@@ -1,6 +1,7 @@
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace AIO_Hybrid_Clipboard.Services
 {
@@ -56,7 +57,7 @@ namespace AIO_Hybrid_Clipboard.Services
                 if (rk.GetValue("HotkeyModifier") is int mod) modifier = (uint)mod;
                 if (rk.GetValue("HotkeyKey")      is int k)   key      = (uint)k;
             }
-            catch { }
+            catch (Exception ex) { Debug.WriteLine($"[AIO] Settings load failed: {ex.Message}"); }
         }
 
         public void Save(uint modifier, uint key)
@@ -68,7 +69,7 @@ namespace AIO_Hybrid_Clipboard.Services
                 rk?.SetValue("HotkeyModifier", (int)modifier, RegistryValueKind.DWord);
                 rk?.SetValue("HotkeyKey",      (int)key,      RegistryValueKind.DWord);
             }
-            catch { }
+            catch (Exception ex) { Debug.WriteLine($"[AIO] Settings save failed: {ex.Message}"); }
         }
     }
 }

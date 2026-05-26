@@ -1,6 +1,7 @@
 using AIO_Hybrid_Clipboard.Models;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
@@ -27,7 +28,7 @@ namespace AIO_Hybrid_Clipboard.Services
                 };
                 File.WriteAllText(FilePath, JsonSerializer.Serialize(data));
             }
-            catch { }
+            catch (Exception ex) { Debug.WriteLine($"[AIO] Session save failed: {ex.Message}"); }
         }
 
         public static (List<string> texts, List<ScreenshotModel> screenshots) Load()
@@ -66,10 +67,10 @@ namespace AIO_Hybrid_Clipboard.Services
                             img.Freeze();
                             shots.Add(new ScreenshotModel { Name = name, Path = path, Image = img, OcrText = ocrText });
                         }
-                        catch { }
+                        catch (Exception ex) { Debug.WriteLine($"[AIO] Load screenshot image failed: {ex.Message}"); }
                     }
             }
-            catch { }
+            catch (Exception ex) { Debug.WriteLine($"[AIO] Session load failed: {ex.Message}"); }
             return (texts, shots);
         }
     }

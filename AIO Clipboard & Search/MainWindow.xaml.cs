@@ -3,6 +3,7 @@ using AIO_Hybrid_Clipboard.Services;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -11,7 +12,6 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 
 namespace AIO_Hybrid_Clipboard
 {
@@ -117,7 +117,7 @@ namespace AIO_Hybrid_Clipboard
         {
             if (ScreenshotHistory.Count >= ClipboardLimit)
             {
-                try { File.Delete(ScreenshotHistory.Last().Path); } catch { }
+                try { File.Delete(ScreenshotHistory.Last().Path); } catch (Exception ex) { Debug.WriteLine($"[AIO] Delete evicted screenshot: {ex.Message}"); }
                 ScreenshotHistory.RemoveAt(ScreenshotHistory.Count - 1);
             }
             ScreenshotHistory.Insert(0, model);
@@ -128,7 +128,7 @@ namespace AIO_Hybrid_Clipboard
                 if (!string.IsNullOrEmpty(ocrResult))
                     model.OcrText = ocrResult;
             }
-            catch { }
+            catch (Exception ex) { Debug.WriteLine($"[AIO] Background OCR failed: {ex.Message}"); }
         }
 
         // --- SEARCH ---
@@ -215,7 +215,7 @@ namespace AIO_Hybrid_Clipboard
         private void CopyBackAndHide(string? text)
         {
             if (string.IsNullOrEmpty(text) || text.StartsWith("[OCR:")) return;
-            try { _clipboard?.SetClipboardSilent(text); } catch { }
+            try { _clipboard?.SetClipboardSilent(text); } catch (Exception ex) { Debug.WriteLine($"[AIO] SetClipboard failed: {ex.Message}"); }
             if (ChkHideOnCopy.IsChecked == true) this.Hide();
         }
 
@@ -230,7 +230,7 @@ namespace AIO_Hybrid_Clipboard
                 _clipboard?.SetClipboardSilent(text);
                 HotkeyManager.SimulatePaste();
             }
-            catch { }
+            catch (Exception ex) { Debug.WriteLine($"[AIO] QuickPaste failed: {ex.Message}"); }
         }
 
         // --- TRAY ---
@@ -436,7 +436,7 @@ namespace AIO_Hybrid_Clipboard
             var selectedShots = LstScreenshots.SelectedItems.Cast<ScreenshotModel>().ToList();
             foreach (var shot in selectedShots)
             {
-                try { File.Delete(shot.Path); } catch { }
+                try { File.Delete(shot.Path); } catch (Exception ex) { Debug.WriteLine($"[AIO] Delete screenshot file: {ex.Message}"); }
                 ScreenshotHistory.Remove(shot);
             }
 

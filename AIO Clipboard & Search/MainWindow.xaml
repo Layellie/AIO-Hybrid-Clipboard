@@ -129,6 +129,7 @@
 
             <CheckBox Grid.Column="1" Name="ChkEdit" Margin="4"
                       Checked="ChkEdit_Checked" Unchecked="ChkEdit_Unchecked"
+                      ToolTip="Toggle edit mode for multi-select"
                       VerticalAlignment="Stretch">
                 <CheckBox.Template>
                     <ControlTemplate TargetType="CheckBox">
@@ -151,7 +152,8 @@
             </CheckBox>
 
             <Button Grid.Column="2" Name="BtnDelete" Click="BtnDelete_Click" Margin="4"
-                    Background="#D92D2D2D" BorderBrush="#444444" BorderThickness="1" Foreground="White">
+                    Background="#D92D2D2D" BorderBrush="#444444" BorderThickness="1" Foreground="White"
+                    ToolTip="Delete selected items">
                 <Button.Resources>
                     <Style TargetType="Border">
                         <Setter Property="CornerRadius" Value="12"/>
@@ -160,7 +162,8 @@
                 <TextBlock Text="🗑" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Button>
 
-            <Button Grid.Column="3" Name="BtnSettings" Click="BtnSettings_Click" Margin="4" Background="#D92D2D2D" BorderBrush="#444444" BorderThickness="1" Foreground="White">
+            <Button Grid.Column="3" Name="BtnSettings" Click="BtnSettings_Click" Margin="4" Background="#D92D2D2D" BorderBrush="#444444" BorderThickness="1" Foreground="White"
+                    ToolTip="Open settings">
                 <Button.Resources>
                     <Style TargetType="Border">
                         <Setter Property="CornerRadius" Value="15"/>
