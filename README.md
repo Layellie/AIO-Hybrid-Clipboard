@@ -1,6 +1,7 @@
 # AIO Hybrid Clipboard 
 
-<img width="997" height="169" alt="Ekran görüntüsü 2026-05-22 180200" src="https://github.com/user-attachments/assets/033e7b90-0050-41a5-bca2-b0b19765913f" />
+<img width="993" height="157" alt="Ekran görüntüsü 2026-05-26 130655" src="https://github.com/user-attachments/assets/9c12bc4a-bfe8-42e9-a5ee-b26ecd808332" />
+
 
 ![Platform](https://img.shields.io/badge/Platform-Windows%2010%20%7C%2011-blue?style=flat-square&logo=windows)
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
