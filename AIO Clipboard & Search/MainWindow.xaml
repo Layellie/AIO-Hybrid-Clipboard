@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:AIO_Hybrid_Clipboard"
         mc:Ignorable="d"
-        Title="AIO Hybrid Clipboard" Height="250" Width="1000"
+        Title="AIO Hybrid Clipboard" SizeToContent="Height" Width="1000" MinHeight="170"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         Topmost="True" ShowInTaskbar="False">
 
@@ -40,6 +40,27 @@
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Padding" Value="5"/>
+        </Style>
+
+        <Style TargetType="{x:Type ListBoxItem}">
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                        <Border x:Name="Bd" Background="Transparent" BorderBrush="Transparent" BorderThickness="2" CornerRadius="11" Padding="0">
+                            <ContentPresenter/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="#5865F2"/>
+                                <Setter TargetName="Bd" Property="Background" Value="#225865F2"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
 
         <Style x:Key="TrayContextMenuStyle" TargetType="{x:Type ContextMenu}">
@@ -96,15 +117,50 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="45"/>
+                <ColumnDefinition Width="42"/>
+                <ColumnDefinition Width="45"/>
             </Grid.ColumnDefinitions>
 
             <Border Grid.Column="0" Background="#D92D2D2D" CornerRadius="15" Margin="4" BorderBrush="#444444" BorderThickness="1">
-                <TextBox Name="TxtSearch" Background="Transparent" Foreground="White" 
-                         BorderThickness="0" FontSize="16" Padding="12,8,12,8" 
+                <TextBox Name="TxtSearch" Background="Transparent" Foreground="White"
+                         BorderThickness="0" FontSize="16" Padding="12,8,12,8"
                          CaretBrush="White" VerticalAlignment="Center"/>
             </Border>
 
-            <Button Grid.Column="1" Name="BtnSettings" Click="BtnSettings_Click" Margin="4" Background="#D92D2D2D" BorderBrush="#444444" BorderThickness="1" Foreground="White">
+            <CheckBox Grid.Column="1" Name="ChkEdit" Margin="4"
+                      Checked="ChkEdit_Checked" Unchecked="ChkEdit_Unchecked"
+                      VerticalAlignment="Stretch">
+                <CheckBox.Template>
+                    <ControlTemplate TargetType="CheckBox">
+                        <Border x:Name="Bd" Background="#D92D2D2D" CornerRadius="12"
+                                BorderBrush="#444444" BorderThickness="1" Cursor="Hand">
+                            <TextBlock Text="✏" FontSize="17" Foreground="White"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#CC5865F2"/>
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="#7289DA"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="#7289DA"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </CheckBox.Template>
+            </CheckBox>
+
+            <Button Grid.Column="2" Name="BtnDelete" Click="BtnDelete_Click" Margin="4"
+                    Background="#D92D2D2D" BorderBrush="#444444" BorderThickness="1" Foreground="White">
+                <Button.Resources>
+                    <Style TargetType="Border">
+                        <Setter Property="CornerRadius" Value="12"/>
+                    </Style>
+                </Button.Resources>
+                <TextBlock Text="🗑" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Button>
+
+            <Button Grid.Column="3" Name="BtnSettings" Click="BtnSettings_Click" Margin="4" Background="#D92D2D2D" BorderBrush="#444444" BorderThickness="1" Foreground="White">
                 <Button.Resources>
                     <Style TargetType="Border">
                         <Setter Property="CornerRadius" Value="15"/>
@@ -182,11 +238,25 @@
                     <CheckBox Name="ChkHideOnCopy" IsChecked="False" Content="Automatically hide menu on new selection" Foreground="White" Margin="0,0,25,0"/>
                     <CheckBox Name="ChkStartWithWindows" IsChecked="False" Content="Start with Windows" Foreground="White" Checked="ChkStartWithWindows_Checked" Unchecked="ChkStartWithWindows_Unchecked"/>
                 </StackPanel>
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                    <TextBlock Text="Shortcut Key: " Foreground="White" VerticalAlignment="Center"/>
-                    <ComboBox Name="CmbModifier" Width="90" Margin="5,0,5,0" SelectionChanged="HotkeyChanged"/>
-                    <TextBlock Text="+" Foreground="White" VerticalAlignment="Center"/>
-                    <ComboBox Name="CmbKey" Width="90" Margin="5,0,0,0" SelectionChanged="HotkeyChanged"/>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,0" HorizontalAlignment="Center">
+                    <TextBlock x:Name="TxtShortcutLabel" Text="Shortcut Key: " Foreground="White" VerticalAlignment="Center"/>
+                    <Border Background="#D92D2D2D" CornerRadius="8" BorderBrush="#555555" BorderThickness="1" Padding="10,5">
+                        <TextBox x:Name="TxtHotkeyCapture" Background="Transparent" Foreground="#E0E0E0"
+                                 BorderThickness="0" Width="160" IsReadOnly="True" CaretBrush="Transparent"
+                                 Cursor="Hand" VerticalAlignment="Center" TextAlignment="Center"
+                                 GotFocus="TxtHotkeyCapture_GotFocus"
+                                 LostFocus="TxtHotkeyCapture_LostFocus"
+                                 PreviewKeyDown="TxtHotkeyCapture_PreviewKeyDown"/>
+                    </Border>
+                </StackPanel>
+                <TextBlock x:Name="TxtQuickPasteHint" Foreground="#777777" FontSize="11"
+                           HorizontalAlignment="Center" Margin="0,6,0,0"/>
+                <StackPanel Orientation="Horizontal" Margin="0,12,0,0" HorizontalAlignment="Center">
+                    <TextBlock x:Name="TxtLanguageLabel" Text="Language: " Foreground="White" VerticalAlignment="Center"/>
+                    <ComboBox x:Name="CmbLanguage" Width="100" Margin="5,0,0,0">
+                        <ComboBoxItem Content="English"/>
+                        <ComboBoxItem Content="Türkçe"/>
+                    </ComboBox>
                 </StackPanel>
             </StackPanel>
         </Border>

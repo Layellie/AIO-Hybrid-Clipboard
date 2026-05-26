@@ -4,8 +4,11 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
+  <Folder Name="/Çözüm Öğeleri/">
+    <File Path="CLAUDE.md" />
+  </Folder>
   <Project Path="AIO Clipboard &amp; Search/AIO_Hybrid_Clipboard.csproj">
     <Platform Solution="Debug|x64" Project="x64" />
   </Project>
-  <Project Path="AIO_SearchEngine/AIO_SearchEngine.vcxproj" />
+  <Project Path="AIO_SearchEngine/AIO_SearchEngine.vcxproj" Id="ffa90827-16e8-4912-835b-ab721f20411c" />
 </Solution>
