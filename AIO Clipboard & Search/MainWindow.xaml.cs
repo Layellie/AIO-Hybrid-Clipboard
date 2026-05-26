@@ -5,7 +5,6 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -22,24 +21,24 @@ namespace AIO_Hybrid_Clipboard
     {
         // --- C++ IMPORTS (P/INVOKE) ---
         [DllImport("AIO_SearchEngine.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
-        public static extern void ProcessImageOCR(byte[] pixelData, int width, int height, int stride, StringBuilder outText, int maxLen);
+        private static extern void ProcessImageOCR(byte[] pixelData, int width, int height, int stride, StringBuilder outText, int maxLen);
 
         // --- WIN32 SYSTEM TRAY API ---
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
-        public struct NOTIFYICONDATA
+        private struct NOTIFYICONDATA
         {
             public int cbSize; public IntPtr hWnd; public int uID; public int uFlags;
             public int uCallbackMessage; public IntPtr hIcon;
             [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)] public string szTip;
         }
-        [DllImport("shell32.dll", CharSet = CharSet.Auto)] public static extern bool Shell_NotifyIcon(int dwMessage, ref NOTIFYICONDATA lpData);
-        [DllImport("user32.dll", CharSet = CharSet.Auto)] public static extern IntPtr LoadIcon(IntPtr hInstance, IntPtr lpIconName);
+        [DllImport("shell32.dll", CharSet = CharSet.Auto)] private static extern bool Shell_NotifyIcon(int dwMessage, ref NOTIFYICONDATA lpData);
+        [DllImport("user32.dll", CharSet = CharSet.Auto)] private static extern IntPtr LoadIcon(IntPtr hInstance, IntPtr lpIconName);
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-        public static extern IntPtr LoadImage(IntPtr hinst, string lpszName, uint uType, int cxDesired, int cyDesired, uint fuLoad);
+        private static extern IntPtr LoadImage(IntPtr hinst, string lpszName, uint uType, int cxDesired, int cyDesired, uint fuLoad);
 
         private const uint IMAGE_ICON = 1;
         private const uint LR_LOADFROMFILE = 0x00000010;
-        [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hWnd);
+        [DllImport("user32.dll")] private static extern bool SetForegroundWindow(IntPtr hWnd);
 
         // --- SEND INPUT (QUICK PASTE) ---
         [DllImport("user32.dll")]
@@ -160,7 +159,7 @@ namespace AIO_Hybrid_Clipboard
         }
 
         // --- DATA COLLECTIONS ---
-        private List<string> ClipboardHistory = new List<string>();
+        private ObservableCollection<string> ClipboardHistory = new();
         private ObservableCollection<ScreenshotModel> ScreenshotHistory = new ObservableCollection<ScreenshotModel>();
 
         private uint CurrentModifier = 0x0001; private uint CurrentKey = 0x20; int ClipboardLimit = 15;
@@ -294,7 +293,6 @@ namespace AIO_Hybrid_Clipboard
 
                             while (ClipboardHistory.Count > ClipboardLimit) ClipboardHistory.RemoveAt(ClipboardHistory.Count - 1);
 
-                            LstResults.ItemsSource = null;
                             LstResults.ItemsSource = ClipboardHistory;
 
                             Clipboard.SetText(ocrResult);
@@ -332,18 +330,12 @@ namespace AIO_Hybrid_Clipboard
                 {
                     if (Clipboard.ContainsText())
                     {
-                        string yeniMetin = Clipboard.GetText().Trim();
-                        if (!string.IsNullOrEmpty(yeniMetin) && !yeniMetin.StartsWith("[OCR:"))
+                        string newText = Clipboard.GetText().Trim();
+                        if (!string.IsNullOrEmpty(newText) && !newText.StartsWith("[OCR:"))
                         {
-                            if (ClipboardHistory.Contains(yeniMetin)) ClipboardHistory.Remove(yeniMetin);
-                            ClipboardHistory.Insert(0, yeniMetin);
+                            if (ClipboardHistory.Contains(newText)) ClipboardHistory.Remove(newText);
+                            ClipboardHistory.Insert(0, newText);
                             while (ClipboardHistory.Count > ClipboardLimit) ClipboardHistory.RemoveAt(ClipboardHistory.Count - 1);
-
-                            if (string.IsNullOrEmpty(TxtSearch.Text))
-                            {
-                                LstResults.ItemsSource = null;
-                                LstResults.ItemsSource = ClipboardHistory;
-                            }
                         }
                     }
                     else if (Clipboard.ContainsImage())
@@ -355,19 +347,19 @@ namespace AIO_Hybrid_Clipboard
                         }
                         _lastScreenshotTime = DateTime.Now;
 
-                        var resim = Clipboard.GetImage();
-                        if (resim != null)
+                        var clipboardImage = Clipboard.GetImage();
+                        if (clipboardImage != null)
                         {
                             string cacheFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "AIO_Cache");
                             if (!Directory.Exists(cacheFolder)) Directory.CreateDirectory(cacheFolder);
 
-                            string dosyaAdi = $"snap_{DateTime.Now:yyyyMMdd_HHmmss}.png";
-                            string tamYol = Path.Combine(cacheFolder, dosyaAdi);
+                            string fileName = $"snap_{DateTime.Now:yyyyMMdd_HHmmss}.png";
+                            string fullPath = Path.Combine(cacheFolder, fileName);
 
-                            using (var fileStream = new FileStream(tamYol, FileMode.Create))
+                            using (var fileStream = new FileStream(fullPath, FileMode.Create))
                             {
                                 PngBitmapEncoder encoder = new PngBitmapEncoder();
-                                encoder.Frames.Add(BitmapFrame.Create(resim));
+                                encoder.Frames.Add(BitmapFrame.Create(clipboardImage));
                                 encoder.Save(fileStream);
                             }
 
@@ -377,17 +369,17 @@ namespace AIO_Hybrid_Clipboard
                                 ScreenshotHistory.RemoveAt(ScreenshotHistory.Count - 1);
                             }
 
-                            int width = resim.PixelWidth;
-                            int height = resim.PixelHeight;
-                            int stride = width * ((resim.Format.BitsPerPixel + 7) / 8);
+                            int width = clipboardImage.PixelWidth;
+                            int height = clipboardImage.PixelHeight;
+                            int stride = width * ((clipboardImage.Format.BitsPerPixel + 7) / 8);
                             byte[] pixels = new byte[height * stride];
-                            resim.CopyPixels(pixels, stride, 0);
+                            clipboardImage.CopyPixels(pixels, stride, 0);
 
                             var newModel = new ScreenshotModel
                             {
                                 Name = $"Capture - {DateTime.Now:HH:mm:ss}",
-                                Path = tamYol,
-                                Image = resim,
+                                Path = fullPath,
+                                Image = clipboardImage,
                                 OcrText = string.Empty
                             };
 
@@ -564,14 +556,14 @@ namespace AIO_Hybrid_Clipboard
         private void ChkStartWithWindows_Checked(object sender, RoutedEventArgs e) => ManageStartup(true);
         private void ChkStartWithWindows_Unchecked(object sender, RoutedEventArgs e) => ManageStartup(false);
 
-        private void ManageStartup(bool ekle)
+        private void ManageStartup(bool enable)
         {
             try
             {
                 RegistryKey rk = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true);
                 if (rk != null)
                 {
-                    if (ekle) rk.SetValue("AIO_ClipboardSearch", Environment.ProcessPath ?? System.Reflection.Assembly.GetExecutingAssembly().Location);
+                    if (enable) rk.SetValue("AIO_ClipboardSearch", Environment.ProcessPath ?? System.Reflection.Assembly.GetExecutingAssembly().Location);
                     else rk.DeleteValue("AIO_ClipboardSearch", false);
                 }
             }
@@ -618,7 +610,7 @@ namespace AIO_Hybrid_Clipboard
             if (e.Key == Key.Escape) this.Hide();
             if (e.Key == Key.Enter && LstResults.SelectedItem != null)
             {
-                GeriKopyalaVeGizle(LstResults.SelectedItem?.ToString());
+                CopyBackAndHide(LstResults.SelectedItem?.ToString());
                 e.Handled = true;
             }
         }
@@ -630,18 +622,18 @@ namespace AIO_Hybrid_Clipboard
             var border = sender as Border;
             if (border != null && border.DataContext != null)
             {
-                GeriKopyalaVeGizle(border.DataContext.ToString());
+                CopyBackAndHide(border.DataContext.ToString());
                 e.Handled = true;
             }
         }
 
-        private void GeriKopyalaVeGizle(string? metin)
+        private void CopyBackAndHide(string? text)
         {
-            if (string.IsNullOrEmpty(metin) || metin.StartsWith("[OCR:")) return;
+            if (string.IsNullOrEmpty(text) || text.StartsWith("[OCR:")) return;
             try
             {
                 RemoveClipboardFormatListener(_windowHandle);
-                Clipboard.SetText(metin);
+                Clipboard.SetText(text);
                 AddClipboardFormatListener(_windowHandle);
             }
             catch { }
@@ -711,12 +703,7 @@ namespace AIO_Hybrid_Clipboard
             if (selectedTexts.Count == 0 && selectedShots.Count == 0) return;
 
             string query = TxtSearch.Text.Trim();
-            if (string.IsNullOrEmpty(query))
-            {
-                LstResults.ItemsSource = null;
-                LstResults.ItemsSource = ClipboardHistory;
-            }
-            else
+            if (!string.IsNullOrEmpty(query))
             {
                 LstResults.ItemsSource = ClipboardHistory
                     .Where(t => t.Contains(query, StringComparison.OrdinalIgnoreCase)).ToList();
