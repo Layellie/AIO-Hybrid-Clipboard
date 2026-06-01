@@ -19,7 +19,7 @@ namespace AIO_Hybrid_Clipboard
     {
         private const int ClipboardLimit = 15;
 
-        private readonly ObservableCollection<string>        ClipboardHistory  = new();
+        private readonly ObservableCollection<ClipItem>        ClipboardHistory  = new();
         private readonly ObservableCollection<ScreenshotModel> ScreenshotHistory = new();
 
         private IntPtr       _windowHandle;
@@ -48,7 +48,10 @@ namespace AIO_Hybrid_Clipboard
             var (texts, shots) = SessionStore.Load();
             foreach (var t in texts) ClipboardHistory.Add(t);
             foreach (var s in shots) ScreenshotHistory.Add(s);
-            if (ClipboardHistory.Count == 0) ClipboardHistory.Add(_settings.T("InitialMsg"));
+            if (ClipboardHistory.Count == 0) ClipboardHistory.Add(new ClipItem(_settings.T("InitialMsg")));
+
+            // Drop cached PNGs that no restored screenshot points at anymore.
+            SessionStore.CleanOrphanCache(ScreenshotHistory.Select(s => s.Path));
 
             TxtSearch.TextChanged        += TxtSearch_TextChanged;
             CmbLanguage.SelectionChanged += CmbLanguage_SelectionChanged;
@@ -106,21 +109,41 @@ namespace AIO_Hybrid_Clipboard
         }
 
         // --- CLIPBOARD EVENTS ---
-        private void OnTextCaptured(string text)
+        private void OnTextCaptured(string text) => InsertText(text);
+
+        // Inserts/promotes a text entry. Pinned entries stay on top and are never
+        // auto-evicted; new entries land at the top of the unpinned section.
+        private void InsertText(string text)
         {
-            if (ClipboardHistory.Contains(text)) ClipboardHistory.Remove(text);
-            ClipboardHistory.Insert(0, text);
-            while (ClipboardHistory.Count > ClipboardLimit) ClipboardHistory.RemoveAt(ClipboardHistory.Count - 1);
+            if (string.IsNullOrEmpty(text)) return;
+
+            var existing = ClipboardHistory.FirstOrDefault(c => c.Text == text);
+            bool wasPinned = existing?.IsPinned ?? false;
+            if (existing != null) ClipboardHistory.Remove(existing);
+
+            int insertAt = wasPinned ? 0 : ClipboardHistory.Count(c => c.IsPinned);
+            ClipboardHistory.Insert(insertAt, new ClipItem(text) { IsPinned = wasPinned });
+
+            while (ClipboardHistory.Count > ClipboardLimit)
+            {
+                var victim = ClipboardHistory.LastOrDefault(c => !c.IsPinned);
+                if (victim == null) break; // everything pinned
+                ClipboardHistory.Remove(victim);
+            }
         }
 
         private async void OnImageCaptured(ScreenshotModel model, byte[] pixels, int width, int height, int stride)
         {
             if (ScreenshotHistory.Count >= ClipboardLimit)
             {
-                try { File.Delete(ScreenshotHistory.Last().Path); } catch (Exception ex) { Debug.WriteLine($"[AIO] Delete evicted screenshot: {ex.Message}"); }
-                ScreenshotHistory.RemoveAt(ScreenshotHistory.Count - 1);
+                var victim = ScreenshotHistory.LastOrDefault(s => !s.IsPinned);
+                if (victim != null)
+                {
+                    try { File.Delete(victim.Path); } catch (Exception ex) { Debug.WriteLine($"[AIO] Delete evicted screenshot: {ex.Message}"); }
+                    ScreenshotHistory.Remove(victim);
+                }
             }
-            ScreenshotHistory.Insert(0, model);
+            ScreenshotHistory.Insert(ScreenshotHistory.Count(s => s.IsPinned), model);
 
             try
             {
@@ -132,7 +155,9 @@ namespace AIO_Hybrid_Clipboard
         }
 
         // --- SEARCH ---
-        private void TxtSearch_TextChanged(object sender, TextChangedEventArgs e)
+        private void TxtSearch_TextChanged(object sender, TextChangedEventArgs e) => ApplyFilter();
+
+        private void ApplyFilter()
         {
             if (TxtSearch == null || LstResults == null || LstScreenshots == null) return;
             string query = TxtSearch.Text.Trim();
@@ -145,7 +170,7 @@ namespace AIO_Hybrid_Clipboard
             }
 
             LstResults.ItemsSource = ClipboardHistory
-                .Where(t => t.Contains(query, StringComparison.OrdinalIgnoreCase)).ToList();
+                .Where(t => t.Text.Contains(query, StringComparison.OrdinalIgnoreCase)).ToList();
             LstScreenshots.ItemsSource = ScreenshotHistory
                 .Where(s => s.Name.Contains(query, StringComparison.OrdinalIgnoreCase) ||
                             s.OcrText.Contains(query, StringComparison.OrdinalIgnoreCase)).ToList();
@@ -198,11 +223,9 @@ namespace AIO_Hybrid_Clipboard
                 if (!string.IsNullOrEmpty(ocrResult))
                 {
                     model.OcrText = ocrResult;
-                    if (ClipboardHistory.Contains(ocrResult)) ClipboardHistory.Remove(ocrResult);
-                    ClipboardHistory.Insert(0, ocrResult);
-                    while (ClipboardHistory.Count > ClipboardLimit) ClipboardHistory.RemoveAt(ClipboardHistory.Count - 1);
-                    LstResults.ItemsSource = ClipboardHistory;
-                    Clipboard.SetText(ocrResult);
+                    InsertText(ocrResult);
+                    ApplyFilter();
+                    _clipboard?.SetClipboardSilent(ocrResult);
                 }
             }
             catch (Exception ex)
@@ -223,7 +246,7 @@ namespace AIO_Hybrid_Clipboard
         private void QuickPaste(int index)
         {
             if (ClipboardHistory.Count <= index) return;
-            string text = ClipboardHistory[index];
+            string text = ClipboardHistory[index].Text;
             if (string.IsNullOrEmpty(text)) return;
             try
             {
@@ -395,10 +418,14 @@ namespace AIO_Hybrid_Clipboard
 
         private void MainWindow_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Key == Key.Escape) this.Hide();
-            if (e.Key == Key.Enter && LstResults.SelectedItem != null)
+            // While capturing a new hotkey in settings, let the capture handler
+            // own the keys (Escape cancels capture instead of hiding the window).
+            if (_isCapturingHotkey) return;
+
+            if (e.Key == Key.Escape) { this.Hide(); return; }
+            if (e.Key == Key.Enter && LstResults.SelectedItem is ClipItem item)
             {
-                CopyBackAndHide(LstResults.SelectedItem?.ToString());
+                CopyBackAndHide(item.Text);
                 e.Handled = true;
             }
         }
@@ -406,9 +433,44 @@ namespace AIO_Hybrid_Clipboard
         private void ResultItem_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             if (ChkEdit?.IsChecked == true) return;
-            if (sender is Border { DataContext: { } ctx })
+            if (sender is Border { DataContext: ClipItem item })
             {
-                CopyBackAndHide(ctx.ToString());
+                CopyBackAndHide(item.Text);
+                e.Handled = true;
+            }
+        }
+
+        // Right-click toggles pin on a text entry.
+        private void ResultItem_TogglePin(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is Border { DataContext: ClipItem item })
+            {
+                TogglePinText(item);
+                e.Handled = true;
+            }
+        }
+
+        private void TogglePinText(ClipItem item)
+        {
+            if (!ClipboardHistory.Contains(item)) return;
+            item.IsPinned = !item.IsPinned;
+            ClipboardHistory.Remove(item);
+            int insertAt = item.IsPinned ? 0 : ClipboardHistory.Count(c => c.IsPinned);
+            ClipboardHistory.Insert(insertAt, item);
+            ApplyFilter();
+        }
+
+        // Right-click toggles pin on a screenshot.
+        private void Screenshot_TogglePin(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is Border { DataContext: ScreenshotModel shot })
+            {
+                if (!ScreenshotHistory.Contains(shot)) return;
+                shot.IsPinned = !shot.IsPinned;
+                ScreenshotHistory.Remove(shot);
+                int insertAt = shot.IsPinned ? 0 : ScreenshotHistory.Count(s => s.IsPinned);
+                ScreenshotHistory.Insert(insertAt, shot);
+                ApplyFilter();
                 e.Handled = true;
             }
         }
@@ -430,8 +492,8 @@ namespace AIO_Hybrid_Clipboard
 
         private void BtnDelete_Click(object sender, RoutedEventArgs e)
         {
-            var selectedTexts = LstResults.SelectedItems.Cast<string>().ToList();
-            foreach (var text in selectedTexts) ClipboardHistory.Remove(text);
+            var selectedTexts = LstResults.SelectedItems.Cast<ClipItem>().ToList();
+            foreach (var item in selectedTexts) ClipboardHistory.Remove(item);
 
             var selectedShots = LstScreenshots.SelectedItems.Cast<ScreenshotModel>().ToList();
             foreach (var shot in selectedShots)
@@ -442,15 +504,7 @@ namespace AIO_Hybrid_Clipboard
 
             if (selectedTexts.Count == 0 && selectedShots.Count == 0) return;
 
-            string query = TxtSearch.Text.Trim();
-            if (!string.IsNullOrEmpty(query))
-            {
-                LstResults.ItemsSource = ClipboardHistory
-                    .Where(t => t.Contains(query, StringComparison.OrdinalIgnoreCase)).ToList();
-                LstScreenshots.ItemsSource = ScreenshotHistory
-                    .Where(s => s.Name.Contains(query, StringComparison.OrdinalIgnoreCase) ||
-                                s.OcrText.Contains(query, StringComparison.OrdinalIgnoreCase)).ToList();
-            }
+            ApplyFilter();
         }
 
         private void BtnSettings_Click(object sender, RoutedEventArgs e) =>

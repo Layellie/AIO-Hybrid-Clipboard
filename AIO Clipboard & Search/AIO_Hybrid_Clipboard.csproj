@@ -10,6 +10,7 @@
     <Platforms>AnyCPU;x64</Platforms>
     <AssemblyTitle>AIO_Hybrid_Clipboard</AssemblyTitle>
     <ApplicationIcon>app_icon.ico</ApplicationIcon>
+    <Version>1.3.0</Version>
   </PropertyGroup>
 
   <ItemGroup>

@@ -4,12 +4,16 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:AIO_Hybrid_Clipboard"
+        xmlns:conv="clr-namespace:AIO_Hybrid_Clipboard.Converters"
         mc:Ignorable="d"
         Title="AIO Hybrid Clipboard" SizeToContent="Height" Width="1000" MinHeight="170"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         Topmost="True" ShowInTaskbar="False">
 
     <Window.Resources>
+        <conv:EditSelectionToVisibilityConverter x:Key="EditSelToVis"/>
+        <conv:QuickPasteBadgeConverter x:Key="IdxBadge"/>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
         <Style TargetType="{x:Type ScrollBar}">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Width" Value="6"/>
@@ -49,9 +53,25 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="{x:Type ListBoxItem}">
-                        <Border x:Name="Bd" Background="Transparent" BorderBrush="Transparent" BorderThickness="2" CornerRadius="11" Padding="0">
-                            <ContentPresenter/>
-                        </Border>
+                        <Grid>
+                            <Border x:Name="Bd" Background="Transparent" BorderBrush="Transparent" BorderThickness="2" CornerRadius="11" Padding="0">
+                                <ContentPresenter/>
+                            </Border>
+                            <!-- Edit-mode selection checkmark, top-right corner -->
+                            <Border Width="22" Height="22" CornerRadius="11"
+                                    Background="#5865F2" BorderBrush="White" BorderThickness="1.5"
+                                    HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,2,6,2"
+                                    IsHitTestVisible="False">
+                                <Border.Visibility>
+                                    <MultiBinding Converter="{StaticResource EditSelToVis}">
+                                        <Binding Path="IsSelected"    RelativeSource="{RelativeSource AncestorType={x:Type ListBoxItem}}"/>
+                                        <Binding Path="SelectionMode" RelativeSource="{RelativeSource AncestorType={x:Type ListBox}}"/>
+                                    </MultiBinding>
+                                </Border.Visibility>
+                                <TextBlock Text="✓" Foreground="White" FontSize="13" FontWeight="Bold"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsSelected" Value="True">
                                 <Setter TargetName="Bd" Property="BorderBrush" Value="#5865F2"/>
@@ -180,7 +200,7 @@
             </Grid.ColumnDefinitions>
 
             <Border Grid.Column="0" Background="#D9252525" CornerRadius="15" Margin="4" BorderBrush="#444444" BorderThickness="1">
-                <ListBox Name="LstResults" PreviewMouseWheel="ListBox_PreviewMouseWheel">
+                <ListBox Name="LstResults" PreviewMouseWheel="ListBox_PreviewMouseWheel" AlternationCount="15">
                     <ListBox.ItemsPanel>
                         <ItemsPanelTemplate>
                             <StackPanel Orientation="Horizontal"/>
@@ -188,22 +208,40 @@
                     </ListBox.ItemsPanel>
                     <ListBox.ItemTemplate>
                         <DataTemplate>
-                            <Border Background="#D9333333" CornerRadius="10" Padding="12,8,12,8" Margin="4,0,4,0" BorderBrush="#555555" BorderThickness="1"
-                                    PreviewMouseLeftButtonDown="ResultItem_PreviewMouseLeftButtonDown" Cursor="Hand">
+                            <Grid Margin="4,0,4,0">
+                                <Border Background="#D9333333" CornerRadius="10" Padding="12,8,12,8" BorderBrush="#555555" BorderThickness="1"
+                                        PreviewMouseLeftButtonDown="ResultItem_PreviewMouseLeftButtonDown"
+                                        MouseRightButtonUp="ResultItem_TogglePin" Cursor="Hand">
 
-                                <TextBlock Text="{Binding}" Foreground="#E0E0E0" MaxWidth="180" TextTrimming="CharacterEllipsis"
-                                           ToolTipService.InitialShowDelay="50"
-                                           ToolTipService.BetweenShowDelay="0"
-                                           ToolTipService.ShowDuration="60000">
-                                    <TextBlock.ToolTip>
-                                        <ToolTip Background="Transparent" BorderThickness="0" Padding="0">
-                                            <Border Background="#F218191C" CornerRadius="8" BorderBrush="#2F3136" BorderThickness="1" Padding="12,10">
-                                                <TextBlock Text="{Binding}" Foreground="White" TextWrapping="Wrap" MaxWidth="400" FontSize="13"/>
-                                            </Border>
-                                        </ToolTip>
-                                    </TextBlock.ToolTip>
-                                </TextBlock>
-                            </Border>
+                                    <TextBlock Text="{Binding Text}" Foreground="#E0E0E0" MaxWidth="180" TextTrimming="CharacterEllipsis"
+                                               ToolTipService.InitialShowDelay="50"
+                                               ToolTipService.BetweenShowDelay="0"
+                                               ToolTipService.ShowDuration="60000">
+                                        <TextBlock.ToolTip>
+                                            <ToolTip Background="Transparent" BorderThickness="0" Padding="0">
+                                                <Border Background="#F218191C" CornerRadius="8" BorderBrush="#2F3136" BorderThickness="1" Padding="12,10">
+                                                    <TextBlock Text="{Binding Text}" Foreground="White" TextWrapping="Wrap" MaxWidth="400" FontSize="13"/>
+                                                </Border>
+                                            </ToolTip>
+                                        </TextBlock.ToolTip>
+                                    </TextBlock>
+                                </Border>
+
+                                <!-- Quick-paste number badge (Alt+1/2/3), first three items only -->
+                                <Border Width="17" Height="17" CornerRadius="8.5" Background="#CC5865F2"
+                                        HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="2,0,0,-2"
+                                        IsHitTestVisible="False"
+                                        Visibility="{Binding (ItemsControl.AlternationIndex), RelativeSource={RelativeSource AncestorType={x:Type ListBoxItem}}, Converter={StaticResource IdxBadge}, ConverterParameter=vis}">
+                                    <TextBlock Foreground="White" FontSize="10" FontWeight="Bold"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                                               Text="{Binding (ItemsControl.AlternationIndex), RelativeSource={RelativeSource AncestorType={x:Type ListBoxItem}}, Converter={StaticResource IdxBadge}}"/>
+                                </Border>
+
+                                <!-- Pin indicator (bottom-right to avoid the edit-mode check badge) -->
+                                <TextBlock Text="📌" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,2,-2"
+                                           IsHitTestVisible="False"
+                                           Visibility="{Binding IsPinned, Converter={StaticResource BoolToVis}}"/>
+                            </Grid>
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>
@@ -222,12 +260,30 @@
                                     PreviewMouseLeftButtonDown="Screenshot_PreviewMouseLeftButtonDown"
                                     PreviewMouseMove="Screenshot_PreviewMouseMove"
                                     PreviewMouseLeftButtonUp="Screenshot_PreviewMouseLeftButtonUp"
-                                    Cursor="Hand">
-                                <Image Source="{Binding Image}" Width="110" Height="65" Stretch="UniformToFill">
-                                    <Image.ToolTip>
-                                        <ToolTip Content="{Binding Name}" Background="#F0000000" Foreground="White" BorderBrush="#555555"/>
-                                    </Image.ToolTip>
-                                </Image>
+                                    MouseRightButtonUp="Screenshot_TogglePin"
+                                    Cursor="Hand"
+                                    ToolTipService.InitialShowDelay="350" ToolTipService.ShowDuration="60000">
+                                <Border.ToolTip>
+                                    <ToolTip Background="Transparent" BorderThickness="0" Padding="0">
+                                        <Border Background="#F218191C" CornerRadius="10" BorderBrush="#2F3136" BorderThickness="1" Padding="6">
+                                            <StackPanel>
+                                                <Image Source="{Binding Image}" MaxWidth="480" MaxHeight="340" Stretch="Uniform"/>
+                                                <TextBlock Text="{Binding Name}" Foreground="#B9BBBE" FontSize="11"
+                                                           HorizontalAlignment="Center" Margin="0,6,0,0"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </ToolTip>
+                                </Border.ToolTip>
+                                <Grid>
+                                    <Image Source="{Binding Image}" Width="110" Height="65" Stretch="UniformToFill"/>
+                                    <!-- Pin indicator -->
+                                    <Border Background="#B2000000" CornerRadius="9" Width="18" Height="18"
+                                            HorizontalAlignment="Left" VerticalAlignment="Top" Margin="2"
+                                            IsHitTestVisible="False"
+                                            Visibility="{Binding IsPinned, Converter={StaticResource BoolToVis}}">
+                                        <TextBlock Text="📌" FontSize="10" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                </Grid>
                             </Border>
                         </DataTemplate>
                     </ListBox.ItemTemplate>
