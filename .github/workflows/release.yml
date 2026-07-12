@@ -44,7 +44,7 @@ jobs:
           iscc "/DMyAppVersion=$version" installer/AIO_Hybrid_Clipboard.iss
 
       - name: Create GitHub release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: installer/Output/*.exe
           generate_release_notes: true
