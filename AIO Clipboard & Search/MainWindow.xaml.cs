@@ -86,6 +86,8 @@ namespace AIO_Hybrid_Clipboard
 
             LstResults.ItemsSource     = ClipboardHistory;
             LstScreenshots.ItemsSource = ScreenshotHistory;
+
+            _ = CheckForUpdatesSilentAsync();
         }
 
         // --- WND PROC ---
@@ -292,6 +294,8 @@ namespace AIO_Hybrid_Clipboard
             ChkStartWithWindows.Content = _settings.T("StartWithWindows");
             TxtShortcutLabel.Text       = _settings.T("ShortcutKey");
             TxtLanguageLabel.Text       = _settings.T("Language");
+            TxtVersionLabel.Text        = _settings.T("Version");
+            BtnCheckUpdate.Content      = _settings.T("CheckUpdates");
 
             if (this.Resources["DiscordTrayMenu"] is ContextMenu trayMenu)
             {
@@ -303,6 +307,7 @@ namespace AIO_Hybrid_Clipboard
         private void PopulateSettingsUI()
         {
             CmbLanguage.SelectedIndex = _settings.CurrentLanguage == SettingsService.AppLanguage.Turkish ? 1 : 0;
+            TxtVersionValue.Text = $"v{UpdateService.CurrentVersion}";
             UpdateHotkeyDisplay();
         }
 
@@ -318,6 +323,66 @@ namespace AIO_Hybrid_Clipboard
         // --- STARTUP ---
         private void ChkStartWithWindows_Checked(object sender, RoutedEventArgs e)   => StartupService.Set(true);
         private void ChkStartWithWindows_Unchecked(object sender, RoutedEventArgs e) => StartupService.Set(false);
+
+        // --- UPDATES ---
+        // Quiet startup check: only surfaces a notice in the settings drawer,
+        // never interrupts the user with dialogs.
+        private async Task CheckForUpdatesSilentAsync()
+        {
+            try
+            {
+                var info = await UpdateService.CheckLatestAsync();
+                if (info != null && info.LatestVersion > UpdateService.CurrentVersion)
+                    TxtUpdateStatus.Text = string.Format(_settings.T("UpdateAvailable"), info.LatestVersion);
+            }
+            catch (Exception ex) { Debug.WriteLine($"[AIO] Silent update check failed: {ex.Message}"); }
+        }
+
+        private async void BtnCheckUpdate_Click(object sender, RoutedEventArgs e)
+        {
+            BtnCheckUpdate.IsEnabled = false;
+            TxtUpdateStatus.Text = _settings.T("UpdateChecking");
+            try
+            {
+                var info = await UpdateService.CheckLatestAsync();
+                if (info == null)
+                {
+                    TxtUpdateStatus.Text = _settings.T("UpdateFailed");
+                }
+                else if (info.LatestVersion <= UpdateService.CurrentVersion)
+                {
+                    TxtUpdateStatus.Text = _settings.T("UpdateUpToDate");
+                }
+                else
+                {
+                    TxtUpdateStatus.Text = string.Format(_settings.T("UpdateAvailable"), info.LatestVersion);
+
+                    var answer = MessageBox.Show(this,
+                        string.Format(_settings.T("UpdatePrompt"), info.LatestVersion),
+                        _settings.T("UpdateTitle"),
+                        MessageBoxButton.YesNo, MessageBoxImage.Question);
+                    if (answer != MessageBoxResult.Yes) return;
+
+                    if (info.InstallerUrl == null)
+                    {
+                        // Release has no installer asset — fall back to the releases page.
+                        UpdateService.OpenReleasesPage();
+                        return;
+                    }
+
+                    TxtUpdateStatus.Text = _settings.T("UpdateDownloading");
+                    string installerPath = await UpdateService.DownloadInstallerAsync(info.InstallerUrl);
+                    UpdateService.RunInstaller(installerPath);
+                    Application.Current.Shutdown(); // let the installer replace our files
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[AIO] Update check failed: {ex.Message}");
+                TxtUpdateStatus.Text = _settings.T("UpdateFailed");
+            }
+            finally { BtnCheckUpdate.IsEnabled = true; }
+        }
 
         // --- HOTKEY CAPTURE ---
         private void UpdateHotkeyDisplay()

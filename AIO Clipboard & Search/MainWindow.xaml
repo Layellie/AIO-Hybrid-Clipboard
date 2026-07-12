@@ -317,6 +317,21 @@
                         <ComboBoxItem Content="Türkçe"/>
                     </ComboBox>
                 </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,12,0,0" HorizontalAlignment="Center">
+                    <TextBlock x:Name="TxtVersionLabel" Text="Version: " Foreground="White" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="TxtVersionValue" Foreground="#B9BBBE" VerticalAlignment="Center" Margin="0,0,15,0"/>
+                    <Button x:Name="BtnCheckUpdate" Click="BtnCheckUpdate_Click" Content="Check for updates"
+                            Background="#CC5865F2" Foreground="White" BorderBrush="#7289DA" BorderThickness="1"
+                            Padding="12,4" Cursor="Hand">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="8"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
+                </StackPanel>
+                <TextBlock x:Name="TxtUpdateStatus" Foreground="#777777" FontSize="11"
+                           HorizontalAlignment="Center" Margin="0,6,0,0"/>
             </StackPanel>
         </Border>
     </Grid>

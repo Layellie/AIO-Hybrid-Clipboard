@@ -26,6 +26,15 @@ namespace AIO_Hybrid_Clipboard.Services
                 ["InitialMsg"]       = "AIO OCR Clipboard Active! Capture images to process... 🚀",
                 ["OcrError"]         = "OCR Error",
                 ["OcrException"]     = "OCR Processing Exception: ",
+                ["Version"]          = "Version: ",
+                ["CheckUpdates"]     = "Check for updates",
+                ["UpdateChecking"]   = "Checking for updates...",
+                ["UpdateUpToDate"]   = "You are on the latest version.",
+                ["UpdateAvailable"]  = "New version v{0} is available!",
+                ["UpdatePrompt"]     = "Version v{0} is available. Download and install it now?",
+                ["UpdateTitle"]      = "Update Available",
+                ["UpdateDownloading"]= "Downloading update... The app will restart.",
+                ["UpdateFailed"]     = "Update check failed. Please try again later.",
             },
             [AppLanguage.Turkish] = new()
             {
@@ -38,6 +47,15 @@ namespace AIO_Hybrid_Clipboard.Services
                 ["InitialMsg"]       = "AIO OCR Pano Aktif! İşlemek için görüntü yakalayın... 🚀",
                 ["OcrError"]         = "OCR Hatası",
                 ["OcrException"]     = "OCR İşleme Hatası: ",
+                ["Version"]          = "Sürüm: ",
+                ["CheckUpdates"]     = "Güncellemeleri denetle",
+                ["UpdateChecking"]   = "Güncellemeler denetleniyor...",
+                ["UpdateUpToDate"]   = "En son sürümü kullanıyorsunuz.",
+                ["UpdateAvailable"]  = "Yeni sürüm v{0} mevcut!",
+                ["UpdatePrompt"]     = "v{0} sürümü mevcut. Şimdi indirilip kurulsun mu?",
+                ["UpdateTitle"]      = "Güncelleme Mevcut",
+                ["UpdateDownloading"]= "Güncelleme indiriliyor... Uygulama yeniden başlatılacak.",
+                ["UpdateFailed"]     = "Güncelleme denetimi başarısız. Lütfen sonra tekrar deneyin.",
             }
         };
 

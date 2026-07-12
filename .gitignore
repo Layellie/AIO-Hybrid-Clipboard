@@ -367,3 +367,6 @@ screenshot_*.png
 
 # Runtime screenshot/session cache
 AIO_Cache/
+
+# Inno Setup compiler output
+installer/Output/

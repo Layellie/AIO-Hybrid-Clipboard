@@ -3,12 +3,20 @@
 <img width="900" alt="AIO Hybrid Clipboard screenshot" src="https://github.com/Layellie/AIO-Hybrid-Clipboard/releases/download/v1.3.0/screenshot_v1.3.0.png" />
 
 ![Platform](https://img.shields.io/badge/Platform-Windows%2010%20%7C%2011-blue?style=flat-square&logo=windows)
-![Version](https://img.shields.io/badge/Version-v1.3.1-blueviolet?style=flat-square)
+![Version](https://img.shields.io/badge/Version-v1.4.0-blueviolet?style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
 ![C++](https://img.shields.io/badge/Engine-C%2B%2B%2020-00599C?style=flat-square&logo=c%2B%2B)
 ![C#](https://img.shields.io/badge/Frontend-C%23%20WPF-239120?style=flat-square&logo=c-sharp)
 
 A blazing fast, lightweight, hybrid (C# WPF + C++20) clipboard manager for Windows. AIO Hybrid Clipboard tracks your copied texts and images and features a built-in asynchronous C++ WinRT OCR engine to instantly extract text from screenshot captures.
+
+## Installation
+
+Download the latest `AIO_Hybrid_Clipboard_Setup_v*.exe` from [Releases](https://github.com/Layellie/AIO-Hybrid-Clipboard/releases/latest) and run it. The installer:
+
+- Installs per-user — **no admin rights / UAC prompt needed**
+- Is fully self-contained — **no .NET runtime installation required**
+- Supports English and Turkish setup languages
 
 ## Features
 
@@ -22,6 +30,7 @@ A blazing fast, lightweight, hybrid (C# WPF + C++20) clipboard manager for Windo
 - **Drag & Drop:** Seamlessly drag images from the gallery into Discord, Photoshop, or your Desktop.
 - **Edit & Bulk Delete:** Toggle edit mode to multi-select (with a checkmark on selected items) and delete history entries and their cached files in one click.
 - **Automatic Cache Cleanup:** Orphaned screenshot files are cleared from the cache on startup, keeping disk usage in check.
+- **Automatic Updates:** The app checks GitHub Releases for new versions on startup and from the settings drawer — one click downloads and installs the update.
 - **System Tray Integration:** Runs silently in the background with a minimal memory footprint.
 - **Global Shortcuts:** Fully customizable hotkeys to summon the launcher from anywhere.
 - **Multi-language UI:** Supports English and Turkish.
@@ -77,6 +86,21 @@ AIO Clipboard & Search\bin\x64\Release\net10.0-windows\AIO_Hybrid_Clipboard.exe
 ```
 
 > **Note:** The application must run as **x64** — the native OCR DLL is x64-only.
+
+### Building the Installer
+
+Requires [Inno Setup 6](https://jrsoftware.org/isinfo.php).
+
+```bat
+:: 1. Publish a self-contained build
+dotnet publish "AIO Clipboard & Search\AIO_Hybrid_Clipboard.csproj" -c Release -r win-x64 --self-contained true -p:Platform=x64
+
+:: 2. Copy the native OCR DLL into the publish folder
+copy "AIO_SearchEngine\x64\Release\AIO_SearchEngine.dll" "AIO Clipboard & Search\bin\x64\Release\net10.0-windows\win-x64\publish\" /Y
+
+:: 3. Compile the installer (output: installer\Output\)
+"%ProgramFiles(x86)%\Inno Setup 6\ISCC.exe" installer\AIO_Hybrid_Clipboard.iss
+```
 
 ## Tech Stack
 

@@ -129,7 +129,8 @@
       <EnableSegmentHeap>true</EnableSegmentHeap>
     </Manifest>
     <PostBuildEvent>
-      <Command>copy "$(OutDir)AIO_SearchEngine.dll" "$(SolutionDir)AIO Clipboard &amp; Search\bin\x64\$(Configuration)\net10.0-windows\" /Y</Command>
+      <Command>if not exist "$(ProjectDir)..\AIO Clipboard &amp; Search\bin\x64\$(Configuration)\net10.0-windows\" mkdir "$(ProjectDir)..\AIO Clipboard &amp; Search\bin\x64\$(Configuration)\net10.0-windows\"
+copy "$(OutDir)AIO_SearchEngine.dll" "$(ProjectDir)..\AIO Clipboard &amp; Search\bin\x64\$(Configuration)\net10.0-windows\" /Y</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -153,7 +154,8 @@
       <EnableSegmentHeap>true</EnableSegmentHeap>
     </Manifest>
     <PostBuildEvent>
-      <Command>copy "$(OutDir)AIO_SearchEngine.dll" "$(SolutionDir)AIO Clipboard &amp; Search\bin\x64\$(Configuration)\net10.0-windows\" /Y</Command>
+      <Command>if not exist "$(ProjectDir)..\AIO Clipboard &amp; Search\bin\x64\$(Configuration)\net10.0-windows\" mkdir "$(ProjectDir)..\AIO Clipboard &amp; Search\bin\x64\$(Configuration)\net10.0-windows\"
+copy "$(OutDir)AIO_SearchEngine.dll" "$(ProjectDir)..\AIO Clipboard &amp; Search\bin\x64\$(Configuration)\net10.0-windows\" /Y</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
