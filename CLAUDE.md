@@ -38,7 +38,14 @@ The OCR integration tests need the Release|x64 native DLL; they self-skip when i
 
 ### WPF Application (`AIO Clipboard & Search/`)
 
-The window is a borderless, transparent, always-on-top overlay toggled via a configurable global hotkey (default: **Alt+Space**). `MainWindow` is UI-only; behavior lives in services:
+The window is a borderless, transparent, always-on-top overlay toggled via a configurable global hotkey (default: **Alt+Space**). The app follows MVVM:
+
+- `ViewModels/MainViewModel` — all application state and behavior: `TextsView`/`ScreenshotsView` (filtered `ICollectionView`s over `HistoryService`), `SearchQuery`, commands (`CopyTextCommand`, `TogglePin*Command`, `RunOcrCommand`, `CheckUpdatesCommand`), settings properties (`HideOnCopy`, `StartWithWindows`, `LanguageIndex`), update status, and a `HideRequested` event the view maps to `Hide()`
+- `ViewModels/LocalizationProxy` — bindable `Loc[key]` indexer over the string table; `Refresh()` re-evaluates every bound label on language change (the tray `ContextMenu` gets its `DataContext` assigned in code because resource trees don't inherit it)
+- `Common/RelayCommand` — minimal `ICommand`
+- `MainWindow` code-behind — Win32 plumbing only: `HwndHook` (tray/hotkey/clipboard messages), `HotkeyManager` registration + capture UI, `ClipboardService`/`TrayIconService` construction (they need the HWND, then get attached to the VM), drag & drop, focus/selection handling
+
+Behavior services under `Services/`:
 
 - `HistoryService` — owns the `Texts`/`Screenshots` ObservableCollections and all insertion/pinning/eviction/filter rules (limit 15; pinned entries never auto-evicted and may exceed the cap)
 - `ClipboardService` — `AddClipboardFormatListener` monitoring, 800ms image debounce, silent copy-back (`SetClipboardSilent` re-attaches the listener in `finally`), PNG encode + save on the thread pool

@@ -121,8 +121,8 @@
         </Style>
 
         <ContextMenu x:Key="DiscordTrayMenu" Style="{StaticResource TrayContextMenuStyle}">
-            <MenuItem Header="Open" Style="{StaticResource TrayMenuItemStyle}" Click="TrayMenu_Open_Click"/>
-            <MenuItem Header="Exit" Style="{StaticResource TrayMenuItemStyle}" Click="TrayMenu_Close_Click"/>
+            <MenuItem Header="{Binding Loc[TrayOpen]}" Style="{StaticResource TrayMenuItemStyle}" Click="TrayMenu_Open_Click"/>
+            <MenuItem Header="{Binding Loc[TrayExit]}" Style="{StaticResource TrayMenuItemStyle}" Click="TrayMenu_Close_Click"/>
         </ContextMenu>
     </Window.Resources>
 
@@ -144,10 +144,13 @@
             <Border Grid.Column="0" Background="#D92D2D2D" CornerRadius="15" Margin="4" BorderBrush="#444444" BorderThickness="1">
                 <TextBox Name="TxtSearch" Background="Transparent" Foreground="White"
                          BorderThickness="0" FontSize="16" Padding="12,8,12,8"
-                         CaretBrush="White" VerticalAlignment="Center"/>
+                         CaretBrush="White" VerticalAlignment="Center"
+                         Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}"
+                         PreviewKeyDown="TxtSearch_PreviewKeyDown"/>
             </Border>
 
             <CheckBox Grid.Column="1" Name="ChkEdit" Margin="4"
+                      IsChecked="{Binding IsEditMode}"
                       Checked="ChkEdit_Checked" Unchecked="ChkEdit_Unchecked"
                       ToolTip="Toggle edit mode for multi-select"
                       VerticalAlignment="Stretch">
@@ -200,7 +203,8 @@
             </Grid.ColumnDefinitions>
 
             <Border Grid.Column="0" Background="#D9252525" CornerRadius="15" Margin="4" BorderBrush="#444444" BorderThickness="1">
-                <ListBox Name="LstResults" PreviewMouseWheel="ListBox_PreviewMouseWheel" AlternationCount="15">
+                <ListBox Name="LstResults" ItemsSource="{Binding TextsView}"
+                         PreviewMouseWheel="ListBox_PreviewMouseWheel" AlternationCount="15">
                     <ListBox.ItemsPanel>
                         <ItemsPanelTemplate>
                             <StackPanel Orientation="Horizontal"/>
@@ -248,7 +252,8 @@
             </Border>
 
             <Border Grid.Column="1" Background="#D9252525" CornerRadius="15" Margin="4" BorderBrush="#444444" BorderThickness="1">
-                <ListBox Name="LstScreenshots" PreviewMouseWheel="ListBox_PreviewMouseWheel">
+                <ListBox Name="LstScreenshots" ItemsSource="{Binding ScreenshotsView}"
+                         PreviewMouseWheel="ListBox_PreviewMouseWheel">
                     <ListBox.ItemsPanel>
                         <ItemsPanelTemplate>
                             <StackPanel Orientation="Horizontal"/>
@@ -294,11 +299,11 @@
         <Border Grid.Row="2" Name="PnlSettingsDrawer" Visibility="Collapsed" Background="#E6222222" CornerRadius="15" Margin="14,5,14,5" Padding="15" BorderBrush="#555555" BorderThickness="1">
             <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,12" HorizontalAlignment="Center">
-                    <CheckBox Name="ChkHideOnCopy" IsChecked="False" Content="Automatically hide menu on new selection" Foreground="White" Margin="0,0,25,0"/>
-                    <CheckBox Name="ChkStartWithWindows" IsChecked="False" Content="Start with Windows" Foreground="White" Checked="ChkStartWithWindows_Checked" Unchecked="ChkStartWithWindows_Unchecked"/>
+                    <CheckBox Name="ChkHideOnCopy" IsChecked="{Binding HideOnCopy}" Content="{Binding Loc[HideOnCopy]}" Foreground="White" Margin="0,0,25,0"/>
+                    <CheckBox Name="ChkStartWithWindows" IsChecked="{Binding StartWithWindows}" Content="{Binding Loc[StartWithWindows]}" Foreground="White"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,0" HorizontalAlignment="Center">
-                    <TextBlock x:Name="TxtShortcutLabel" Text="Shortcut Key: " Foreground="White" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="TxtShortcutLabel" Text="{Binding Loc[ShortcutKey]}" Foreground="White" VerticalAlignment="Center"/>
                     <Border Background="#D92D2D2D" CornerRadius="8" BorderBrush="#555555" BorderThickness="1" Padding="10,5">
                         <TextBox x:Name="TxtHotkeyCapture" Background="Transparent" Foreground="#E0E0E0"
                                  BorderThickness="0" Width="160" IsReadOnly="True" CaretBrush="Transparent"
@@ -311,16 +316,16 @@
                 <TextBlock x:Name="TxtQuickPasteHint" Foreground="#777777" FontSize="11"
                            HorizontalAlignment="Center" Margin="0,6,0,0"/>
                 <StackPanel Orientation="Horizontal" Margin="0,12,0,0" HorizontalAlignment="Center">
-                    <TextBlock x:Name="TxtLanguageLabel" Text="Language: " Foreground="White" VerticalAlignment="Center"/>
-                    <ComboBox x:Name="CmbLanguage" Width="100" Margin="5,0,0,0">
+                    <TextBlock x:Name="TxtLanguageLabel" Text="{Binding Loc[Language]}" Foreground="White" VerticalAlignment="Center"/>
+                    <ComboBox x:Name="CmbLanguage" Width="100" Margin="5,0,0,0" SelectedIndex="{Binding LanguageIndex}">
                         <ComboBoxItem Content="English"/>
                         <ComboBoxItem Content="Türkçe"/>
                     </ComboBox>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Margin="0,12,0,0" HorizontalAlignment="Center">
-                    <TextBlock x:Name="TxtVersionLabel" Text="Version: " Foreground="White" VerticalAlignment="Center"/>
-                    <TextBlock x:Name="TxtVersionValue" Foreground="#B9BBBE" VerticalAlignment="Center" Margin="0,0,15,0"/>
-                    <Button x:Name="BtnCheckUpdate" Click="BtnCheckUpdate_Click" Content="Check for updates"
+                    <TextBlock x:Name="TxtVersionLabel" Text="{Binding Loc[Version]}" Foreground="White" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="TxtVersionValue" Text="{Binding VersionText}" Foreground="#B9BBBE" VerticalAlignment="Center" Margin="0,0,15,0"/>
+                    <Button x:Name="BtnCheckUpdate" Command="{Binding CheckUpdatesCommand}" Content="{Binding Loc[CheckUpdates]}"
                             Background="#CC5865F2" Foreground="White" BorderBrush="#7289DA" BorderThickness="1"
                             Padding="12,4" Cursor="Hand">
                         <Button.Resources>
@@ -330,7 +335,7 @@
                         </Button.Resources>
                     </Button>
                 </StackPanel>
-                <TextBlock x:Name="TxtUpdateStatus" Foreground="#777777" FontSize="11"
+                <TextBlock x:Name="TxtUpdateStatus" Text="{Binding UpdateStatus}" Foreground="#777777" FontSize="11"
                            HorizontalAlignment="Center" Margin="0,6,0,0"/>
             </StackPanel>
         </Border>

@@ -1,10 +1,9 @@
 using AIO_Hybrid_Clipboard.Models;
 using AIO_Hybrid_Clipboard.Services;
+using AIO_Hybrid_Clipboard.ViewModels;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -13,16 +12,20 @@ using System.Windows.Media;
 
 namespace AIO_Hybrid_Clipboard
 {
+    /// <summary>
+    /// View layer only: window chrome, HWND message hooks, global hotkeys, tray,
+    /// drag &amp; drop and focus handling. All application behavior lives in
+    /// <see cref="MainViewModel"/>; gestures here just invoke its commands.
+    /// </summary>
     public partial class MainWindow : Window
     {
-        private IntPtr       _windowHandle;
-        private HwndSource?  _hwndSource;
+        private readonly MainViewModel _vm = new();
+        private readonly HotkeyManager _hotkeys = new();
 
-        private readonly HistoryService  _history  = new();
-        private readonly SettingsService _settings = new();
-        private readonly HotkeyManager   _hotkeys  = new();
-        private ClipboardService?        _clipboard;
-        private TrayIconService?         _tray;
+        private IntPtr           _windowHandle;
+        private HwndSource?      _hwndSource;
+        private ClipboardService? _clipboard;
+        private TrayIconService?  _tray;
 
         private bool  _isCapturingHotkey;
         private Point _dragStartPoint;
@@ -30,26 +33,14 @@ namespace AIO_Hybrid_Clipboard
         public MainWindow()
         {
             InitializeComponent();
+            DataContext = _vm;
+
+            _vm.HideRequested += Hide;
             this.PreviewKeyDown += MainWindow_PreviewKeyDown;
 
-            _settings.Load(out uint modifier, out uint key);
-            _hotkeys.CurrentModifier = modifier;
-            _hotkeys.CurrentKey      = key;
-
-            PopulateSettingsUI();
-            ChkStartWithWindows.IsChecked = StartupService.IsEnabled();
-
-            var (texts, shots) = SessionStore.Load();
-            foreach (var t in texts) _history.Texts.Add(t);
-            foreach (var s in shots) _history.Screenshots.Add(s);
-            if (_history.Texts.Count == 0) _history.Texts.Add(new ClipItem(_settings.T("InitialMsg")));
-
-            // Drop cached PNGs that no restored screenshot points at anymore.
-            SessionStore.CleanOrphanCache(_history.Screenshots.Select(s => s.Path));
-
-            TxtSearch.TextChanged        += TxtSearch_TextChanged;
-            CmbLanguage.SelectionChanged += CmbLanguage_SelectionChanged;
-            ApplyLanguage();
+            _hotkeys.CurrentModifier = _vm.HotkeyModifier;
+            _hotkeys.CurrentKey      = _vm.HotkeyKey;
+            UpdateHotkeyDisplay();
         }
 
         protected override void OnSourceInitialized(EventArgs e)
@@ -62,12 +53,11 @@ namespace AIO_Hybrid_Clipboard
 
             _hotkeys.Attach(_windowHandle);
             _hotkeys.ToggleRequested     += ToggleLauncher;
-            _hotkeys.QuickPasteRequested += QuickPaste;
+            _hotkeys.QuickPasteRequested += _vm.QuickPaste;
             _hotkeys.Register();
 
             _clipboard = new ClipboardService(_windowHandle);
-            _clipboard.TextCaptured  += OnTextCaptured;
-            _clipboard.ImageCaptured += OnImageCaptured;
+            _vm.AttachClipboard(_clipboard);
             _clipboard.Start();
 
             _tray = new TrayIconService(_windowHandle);
@@ -78,10 +68,7 @@ namespace AIO_Hybrid_Clipboard
             _hwndSource = HwndSource.FromHwnd(_windowHandle);
             _hwndSource.AddHook(HwndHook);
 
-            LstResults.ItemsSource     = _history.Texts;
-            LstScreenshots.ItemsSource = _history.Screenshots;
-
-            _ = CheckForUpdatesSilentAsync();
+            _ = _vm.CheckForUpdatesSilentAsync();
         }
 
         // --- WND PROC ---
@@ -104,46 +91,6 @@ namespace AIO_Hybrid_Clipboard
             return IntPtr.Zero;
         }
 
-        // --- CLIPBOARD EVENTS ---
-        private void OnTextCaptured(string text) => _history.InsertText(text);
-
-        private async void OnImageCaptured(ScreenshotModel model, byte[] pixels, int width, int height, int stride)
-        {
-            var evicted = _history.AddScreenshot(model);
-            if (evicted != null)
-            {
-                try { File.Delete(evicted.Path); }
-                catch (Exception ex) { Log.Warn($"Delete evicted screenshot failed: {ex.Message}"); }
-            }
-
-            try
-            {
-                string ocrResult = await OcrService.RecognizeAsync(pixels, width, height, stride);
-                if (!string.IsNullOrEmpty(ocrResult))
-                    model.OcrText = ocrResult;
-            }
-            catch (Exception ex) { Log.Error("Background OCR failed", ex); }
-        }
-
-        // --- SEARCH ---
-        private void TxtSearch_TextChanged(object sender, TextChangedEventArgs e) => ApplyFilter();
-
-        private void ApplyFilter()
-        {
-            if (TxtSearch == null || LstResults == null || LstScreenshots == null) return;
-            string query = TxtSearch.Text.Trim();
-
-            if (string.IsNullOrEmpty(query))
-            {
-                LstResults.ItemsSource     = _history.Texts;
-                LstScreenshots.ItemsSource = _history.Screenshots;
-                return;
-            }
-
-            LstResults.ItemsSource     = _history.FilterTexts(query);
-            LstScreenshots.ItemsSource = _history.FilterScreenshots(query);
-        }
-
         // --- DRAG & DROP ---
         private void Screenshot_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
             => _dragStartPoint = e.GetPosition(null);
@@ -162,70 +109,44 @@ namespace AIO_Hybrid_Clipboard
             }
         }
 
-        private async void Screenshot_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        private void Screenshot_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
-            if (ChkEdit?.IsChecked == true) return;
             Point pos = e.GetPosition(null);
             if (Math.Abs(pos.X - _dragStartPoint.X) < SystemParameters.MinimumHorizontalDragDistance &&
                 Math.Abs(pos.Y - _dragStartPoint.Y) < SystemParameters.MinimumVerticalDragDistance)
             {
                 if (sender is Border { DataContext: ScreenshotModel model })
-                    await ExecuteOcrOnScreenshot(model);
+                    _vm.RunOcrCommand.Execute(model);
             }
         }
 
-        // --- ON-DEMAND OCR ---
-        private async Task ExecuteOcrOnScreenshot(ScreenshotModel model)
+        // --- ITEM GESTURES ---
+        private void ResultItem_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            if (model.Image == null) return;
-
-            int width  = model.Image.PixelWidth;
-            int height = model.Image.PixelHeight;
-            int stride = width * ((model.Image.Format.BitsPerPixel + 7) / 8);
-            byte[] pixels = new byte[height * stride];
-            model.Image.CopyPixels(pixels, stride, 0);
-
-            try
+            if (_vm.IsEditMode) return;
+            if (sender is Border { DataContext: ClipItem item })
             {
-                string ocrResult = await OcrService.RecognizeAsync(pixels, width, height, stride);
-                if (string.IsNullOrEmpty(ocrResult))
-                {
-                    model.OcrText = _settings.T("OcrNoText");
-                    return;
-                }
-
-                model.OcrText = ocrResult;
-                _history.InsertText(ocrResult);
-                ApplyFilter();
-                _clipboard?.SetClipboardSilent(ocrResult);
-            }
-            catch (Exception ex)
-            {
-                Log.Error("On-demand OCR failed", ex);
-                MessageBox.Show(_settings.T("OcrException") + ex.Message, _settings.T("OcrError"));
+                _vm.CopyTextCommand.Execute(item);
+                e.Handled = true;
             }
         }
 
-        // --- COPY & HIDE ---
-        private void CopyBackAndHide(string? text)
+        private void ResultItem_TogglePin(object sender, MouseButtonEventArgs e)
         {
-            if (string.IsNullOrEmpty(text) || OcrService.IsPlaceholder(text)) return;
-            try { _clipboard?.SetClipboardSilent(text); } catch (Exception ex) { Log.Warn($"SetClipboard failed: {ex.Message}"); }
-            if (ChkHideOnCopy.IsChecked == true) this.Hide();
+            if (sender is Border { DataContext: ClipItem item })
+            {
+                _vm.TogglePinTextCommand.Execute(item);
+                e.Handled = true;
+            }
         }
 
-        // --- QUICK PASTE ---
-        private void QuickPaste(int index)
+        private void Screenshot_TogglePin(object sender, MouseButtonEventArgs e)
         {
-            if (_history.Texts.Count <= index) return;
-            string text = _history.Texts[index].Text;
-            if (string.IsNullOrEmpty(text)) return;
-            try
+            if (sender is Border { DataContext: ScreenshotModel shot })
             {
-                _clipboard?.SetClipboardSilent(text);
-                HotkeyManager.SimulatePaste();
+                _vm.TogglePinScreenshotCommand.Execute(shot);
+                e.Handled = true;
             }
-            catch (Exception ex) { Log.Warn($"QuickPaste failed: {ex.Message}"); }
         }
 
         // --- TRAY ---
@@ -234,8 +155,9 @@ namespace AIO_Hybrid_Clipboard
             Win32Api.SetForegroundWindow(_windowHandle);
             if (this.FindResource("DiscordTrayMenu") is ContextMenu menu)
             {
-                menu.Placement = System.Windows.Controls.Primitives.PlacementMode.MousePoint;
-                menu.IsOpen    = true;
+                menu.DataContext = _vm; // resource tree does not inherit the window's DataContext
+                menu.Placement   = System.Windows.Controls.Primitives.PlacementMode.MousePoint;
+                menu.IsOpen      = true;
             }
         }
 
@@ -253,104 +175,7 @@ namespace AIO_Hybrid_Clipboard
             TxtSearch.Focus();
         }
 
-        // --- LANGUAGE & SETTINGS ---
-        private void ApplyLanguage()
-        {
-            ChkHideOnCopy.Content       = _settings.T("HideOnCopy");
-            ChkStartWithWindows.Content = _settings.T("StartWithWindows");
-            TxtShortcutLabel.Text       = _settings.T("ShortcutKey");
-            TxtLanguageLabel.Text       = _settings.T("Language");
-            TxtVersionLabel.Text        = _settings.T("Version");
-            BtnCheckUpdate.Content      = _settings.T("CheckUpdates");
-
-            if (this.Resources["DiscordTrayMenu"] is ContextMenu trayMenu)
-            {
-                if (trayMenu.Items[0] is MenuItem open) open.Header = _settings.T("TrayOpen");
-                if (trayMenu.Items[1] is MenuItem exit) exit.Header = _settings.T("TrayExit");
-            }
-        }
-
-        private void PopulateSettingsUI()
-        {
-            CmbLanguage.SelectedIndex = _settings.CurrentLanguage == SettingsService.AppLanguage.Turkish ? 1 : 0;
-            TxtVersionValue.Text = $"v{UpdateService.CurrentVersion}";
-            UpdateHotkeyDisplay();
-        }
-
-        private void CmbLanguage_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            _settings.CurrentLanguage = CmbLanguage.SelectedIndex == 1
-                ? SettingsService.AppLanguage.Turkish
-                : SettingsService.AppLanguage.English;
-            ApplyLanguage();
-            _settings.Save(_hotkeys.CurrentModifier, _hotkeys.CurrentKey);
-        }
-
-        // --- STARTUP ---
-        private void ChkStartWithWindows_Checked(object sender, RoutedEventArgs e)   => StartupService.Set(true);
-        private void ChkStartWithWindows_Unchecked(object sender, RoutedEventArgs e) => StartupService.Set(false);
-
-        // --- UPDATES ---
-        // Quiet startup check: only surfaces a notice in the settings drawer,
-        // never interrupts the user with dialogs.
-        private async Task CheckForUpdatesSilentAsync()
-        {
-            try
-            {
-                var info = await UpdateService.CheckLatestAsync();
-                if (info != null && info.LatestVersion > UpdateService.CurrentVersion)
-                    TxtUpdateStatus.Text = string.Format(_settings.T("UpdateAvailable"), info.LatestVersion);
-            }
-            catch (Exception ex) { Log.Warn($"Silent update check failed: {ex.Message}"); }
-        }
-
-        private async void BtnCheckUpdate_Click(object sender, RoutedEventArgs e)
-        {
-            BtnCheckUpdate.IsEnabled = false;
-            TxtUpdateStatus.Text = _settings.T("UpdateChecking");
-            try
-            {
-                var info = await UpdateService.CheckLatestAsync();
-                if (info == null)
-                {
-                    TxtUpdateStatus.Text = _settings.T("UpdateFailed");
-                }
-                else if (info.LatestVersion <= UpdateService.CurrentVersion)
-                {
-                    TxtUpdateStatus.Text = _settings.T("UpdateUpToDate");
-                }
-                else
-                {
-                    TxtUpdateStatus.Text = string.Format(_settings.T("UpdateAvailable"), info.LatestVersion);
-
-                    var answer = MessageBox.Show(this,
-                        string.Format(_settings.T("UpdatePrompt"), info.LatestVersion),
-                        _settings.T("UpdateTitle"),
-                        MessageBoxButton.YesNo, MessageBoxImage.Question);
-                    if (answer != MessageBoxResult.Yes) return;
-
-                    if (info.InstallerUrl == null)
-                    {
-                        // Release has no installer asset — fall back to the releases page.
-                        UpdateService.OpenReleasesPage();
-                        return;
-                    }
-
-                    TxtUpdateStatus.Text = _settings.T("UpdateDownloading");
-                    string installerPath = await UpdateService.DownloadInstallerAsync(info.InstallerUrl);
-                    UpdateService.RunInstaller(installerPath);
-                    Application.Current.Shutdown(); // let the installer replace our files
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Error("Update check failed", ex);
-                TxtUpdateStatus.Text = _settings.T("UpdateFailed");
-            }
-            finally { BtnCheckUpdate.IsEnabled = true; }
-        }
-
-        // --- HOTKEY CAPTURE ---
+        // --- HOTKEY CAPTURE (view-only: raw key handling + Win32 registration) ---
         private void UpdateHotkeyDisplay()
         {
             if (TxtHotkeyCapture == null) return;
@@ -412,7 +237,7 @@ namespace AIO_Hybrid_Clipboard
             _hotkeys.CurrentKey      = (uint)KeyInterop.VirtualKeyFromKey(key);
 
             if (_windowHandle != IntPtr.Zero) _hotkeys.Register();
-            _settings.Save(_hotkeys.CurrentModifier, _hotkeys.CurrentKey);
+            _vm.SaveHotkey(_hotkeys.CurrentModifier, _hotkeys.CurrentKey);
 
             _isCapturingHotkey = false;
             UpdateHotkeyDisplay();
@@ -420,7 +245,7 @@ namespace AIO_Hybrid_Clipboard
             e.Handled = true;
         }
 
-        // --- UI HELPERS ---
+        // --- KEYBOARD & SCROLL ---
         private void ListBox_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
         {
             if (sender is ListBox listBox)
@@ -461,44 +286,12 @@ namespace AIO_Hybrid_Clipboard
             if (e.Key == Key.Escape) { this.Hide(); return; }
             if (e.Key == Key.Enter && LstResults.SelectedItem is ClipItem item)
             {
-                CopyBackAndHide(item.Text);
+                _vm.CopyTextCommand.Execute(item);
                 e.Handled = true;
             }
         }
 
-        private void ResultItem_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-        {
-            if (ChkEdit?.IsChecked == true) return;
-            if (sender is Border { DataContext: ClipItem item })
-            {
-                CopyBackAndHide(item.Text);
-                e.Handled = true;
-            }
-        }
-
-        // Right-click toggles pin on a text entry.
-        private void ResultItem_TogglePin(object sender, MouseButtonEventArgs e)
-        {
-            if (sender is Border { DataContext: ClipItem item })
-            {
-                _history.TogglePin(item);
-                ApplyFilter();
-                e.Handled = true;
-            }
-        }
-
-        // Right-click toggles pin on a screenshot.
-        private void Screenshot_TogglePin(object sender, MouseButtonEventArgs e)
-        {
-            if (sender is Border { DataContext: ScreenshotModel shot })
-            {
-                _history.TogglePin(shot);
-                ApplyFilter();
-                e.Handled = true;
-            }
-        }
-
-        // --- EDIT MODE ---
+        // --- EDIT MODE (SelectionMode is a view concern) ---
         private void ChkEdit_Checked(object sender, RoutedEventArgs e)
         {
             LstResults.SelectionMode     = SelectionMode.Multiple;
@@ -513,23 +306,8 @@ namespace AIO_Hybrid_Clipboard
             LstScreenshots.SelectionMode = SelectionMode.Single;
         }
 
-        private void BtnDelete_Click(object sender, RoutedEventArgs e)
-        {
-            var selectedTexts = LstResults.SelectedItems.Cast<ClipItem>().ToList();
-            foreach (var item in selectedTexts) _history.Texts.Remove(item);
-
-            var selectedShots = LstScreenshots.SelectedItems.Cast<ScreenshotModel>().ToList();
-            foreach (var shot in selectedShots)
-            {
-                try { File.Delete(shot.Path); }
-                catch (Exception ex) { Log.Warn($"Delete screenshot file failed: {ex.Message}"); }
-                _history.Screenshots.Remove(shot);
-            }
-
-            if (selectedTexts.Count == 0 && selectedShots.Count == 0) return;
-
-            ApplyFilter();
-        }
+        private void BtnDelete_Click(object sender, RoutedEventArgs e) =>
+            _vm.DeleteItems(LstResults.SelectedItems, LstScreenshots.SelectedItems);
 
         private void BtnSettings_Click(object sender, RoutedEventArgs e) =>
             PnlSettingsDrawer.Visibility = PnlSettingsDrawer.Visibility == Visibility.Visible
@@ -539,7 +317,7 @@ namespace AIO_Hybrid_Clipboard
         // --- SHUTDOWN ---
         protected override void OnClosed(EventArgs e)
         {
-            SessionStore.Save(_history.Texts, _history.Screenshots);
+            _vm.SaveSession();
             _hwndSource?.RemoveHook(HwndHook);
             _clipboard?.Dispose();
             _hotkeys.Dispose();

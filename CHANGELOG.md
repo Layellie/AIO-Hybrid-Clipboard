@@ -4,6 +4,21 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+- Full MVVM migration: new `MainViewModel` owns application state and behavior
+  (filtered collection views, search, pin/copy/OCR/delete commands, settings,
+  updates); `MainWindow` code-behind now contains only Win32 plumbing (HWND
+  hooks, hotkeys, tray, drag & drop). Localized labels bind through a
+  `Loc[...]` indexer proxy and refresh live on language change.
+- Test dependencies bumped via Dependabot (Test.Sdk 18.7, xunit 2.9.3,
+  runner 3.1.5, System.Drawing.Common 10.0.9, setup-msbuild v3)
+
+### Added
+- ViewModel test coverage (34 tests total)
+- Repository social preview asset (`assets/social_preview.png`)
+
 ## [1.5.0] - 2026-07-12
 
 ### Added
