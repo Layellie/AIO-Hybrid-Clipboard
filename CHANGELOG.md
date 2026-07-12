@@ -4,6 +4,21 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- Global exception logging (`DispatcherUnhandledException`, domain and
+  unobserved-task hooks) — crashes now leave a trace in `AIO_Cache/app.log`
+- `IDialogService` abstraction; view model no longer calls `MessageBox` directly
+- Update-flow test coverage: release JSON parsing, newer/equal/older version
+  decisions, API-failure handling, plus a live contract test against the
+  published GitHub release (43 tests total)
+- `CODE_OF_CONDUCT.md`; GitHub Discussions enabled
+
+### Changed
+- `UpdateService` is instance-based with an injectable `HttpMessageHandler`
+- CI actions bumped (checkout v7, setup-dotnet v5, gh-release v3)
+
 ## [1.6.0] - 2026-07-12
 
 ### Changed

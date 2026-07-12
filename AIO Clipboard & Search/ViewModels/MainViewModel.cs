@@ -25,12 +25,20 @@ namespace AIO_Hybrid_Clipboard.ViewModels
         internal HistoryService  History  { get; } = new();
         internal SettingsService Settings { get; } = new();
 
+        private readonly UpdateService _updater;
+        private readonly IDialogService _dialogs;
         private ClipboardService? _clipboard;
         private uint _hotkeyModifier;
         private uint _hotkeyKey;
 
-        public MainViewModel()
+        public MainViewModel() : this(null, null) { }
+
+        /// <summary>Test seam: inject a fake updater (canned HTTP) and dialog service.</summary>
+        internal MainViewModel(UpdateService? updater, IDialogService? dialogs)
         {
+            _updater = updater ?? new UpdateService();
+            _dialogs = dialogs ?? new MessageBoxDialogService();
+
             Settings.Load(out _hotkeyModifier, out _hotkeyKey);
             Loc = new LocalizationProxy(Settings);
 
@@ -231,7 +239,7 @@ namespace AIO_Hybrid_Clipboard.ViewModels
             catch (Exception ex)
             {
                 Log.Error("On-demand OCR failed", ex);
-                MessageBox.Show(Settings.T("OcrException") + ex.Message, Settings.T("OcrError"));
+                _dialogs.ShowError(Settings.T("OcrException") + ex.Message, Settings.T("OcrError"));
             }
         }
 
@@ -258,20 +266,20 @@ namespace AIO_Hybrid_Clipboard.ViewModels
         {
             try
             {
-                var info = await UpdateService.CheckLatestAsync();
+                var info = await _updater.CheckLatestAsync();
                 if (info != null && info.LatestVersion > UpdateService.CurrentVersion)
                     UpdateStatus = string.Format(Settings.T("UpdateAvailable"), info.LatestVersion);
             }
             catch (Exception ex) { Log.Warn($"Silent update check failed: {ex.Message}"); }
         }
 
-        private async Task CheckForUpdatesAsync()
+        internal async Task CheckForUpdatesAsync()
         {
             _updateCheckRunning = true;
             UpdateStatus = Settings.T("UpdateChecking");
             try
             {
-                var info = await UpdateService.CheckLatestAsync();
+                var info = await _updater.CheckLatestAsync();
                 if (info == null)
                 {
                     UpdateStatus = Settings.T("UpdateFailed");
@@ -284,22 +292,21 @@ namespace AIO_Hybrid_Clipboard.ViewModels
                 {
                     UpdateStatus = string.Format(Settings.T("UpdateAvailable"), info.LatestVersion);
 
-                    var answer = MessageBox.Show(
-                        string.Format(Settings.T("UpdatePrompt"), info.LatestVersion),
-                        Settings.T("UpdateTitle"),
-                        MessageBoxButton.YesNo, MessageBoxImage.Question);
-                    if (answer != MessageBoxResult.Yes) return;
+                    if (!_dialogs.Confirm(
+                            string.Format(Settings.T("UpdatePrompt"), info.LatestVersion),
+                            Settings.T("UpdateTitle")))
+                        return;
 
                     if (info.InstallerUrl == null)
                     {
                         // Release has no installer asset — fall back to the releases page.
-                        UpdateService.OpenReleasesPage();
+                        _updater.OpenReleasesPage();
                         return;
                     }
 
                     UpdateStatus = Settings.T("UpdateDownloading");
-                    string installerPath = await UpdateService.DownloadInstallerAsync(info.InstallerUrl);
-                    UpdateService.RunInstaller(installerPath);
+                    string installerPath = await _updater.DownloadInstallerAsync(info.InstallerUrl);
+                    _updater.RunInstaller(installerPath);
                     Application.Current.Shutdown(); // let the installer replace our files
                 }
             }

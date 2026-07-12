@@ -9,11 +9,19 @@ using System.Threading.Tasks;
 
 namespace AIO_Hybrid_Clipboard.Services
 {
-    /// <summary>Checks GitHub Releases for a newer version and runs the installer.</summary>
-    internal static class UpdateService
+    /// <summary>
+    /// Checks GitHub Releases for a newer version and runs the installer.
+    /// Instance-based with an injectable <see cref="HttpMessageHandler"/> so the
+    /// parsing and version logic are unit-testable without touching the network.
+    /// </summary>
+    internal class UpdateService
     {
         private const string LatestReleaseApi = "https://api.github.com/repos/Layellie/AIO-Hybrid-Clipboard/releases/latest";
         private const string ReleasesPage     = "https://github.com/Layellie/AIO-Hybrid-Clipboard/releases/latest";
+
+        private readonly HttpMessageHandler? _handler;
+
+        public UpdateService(HttpMessageHandler? handler = null) => _handler = handler;
 
         internal sealed record UpdateInfo(Version LatestVersion, string? InstallerUrl);
 
@@ -32,7 +40,7 @@ namespace AIO_Hybrid_Clipboard.Services
             new(v.Major, Math.Max(v.Minor, 0), Math.Max(v.Build, 0));
 
         /// <summary>Returns the latest release info, or null when it cannot be determined.</summary>
-        public static async Task<UpdateInfo?> CheckLatestAsync()
+        public async Task<UpdateInfo?> CheckLatestAsync()
         {
             using var http = CreateClient(TimeSpan.FromSeconds(30));
             using var response = await http.GetAsync(LatestReleaseApi);
@@ -66,7 +74,7 @@ namespace AIO_Hybrid_Clipboard.Services
         }
 
         /// <summary>Downloads the installer to %TEMP% and returns its path.</summary>
-        public static async Task<string> DownloadInstallerAsync(string url)
+        public async Task<string> DownloadInstallerAsync(string url)
         {
             // Generous timeout: the self-contained installer is tens of megabytes.
             using var http = CreateClient(TimeSpan.FromMinutes(10));
@@ -78,15 +86,20 @@ namespace AIO_Hybrid_Clipboard.Services
             return target;
         }
 
-        public static void RunInstaller(string path) =>
+        public void RunInstaller(string path) =>
             Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
 
-        public static void OpenReleasesPage() =>
+        public void OpenReleasesPage() =>
             Process.Start(new ProcessStartInfo(ReleasesPage) { UseShellExecute = true });
 
-        private static HttpClient CreateClient(TimeSpan timeout)
+        private HttpClient CreateClient(TimeSpan timeout)
         {
-            var http = new HttpClient { Timeout = timeout };
+            // An injected handler is owned by the caller (reused across requests);
+            // the default handler belongs to the short-lived client.
+            var http = _handler == null
+                ? new HttpClient()
+                : new HttpClient(_handler, disposeHandler: false);
+            http.Timeout = timeout;
             http.DefaultRequestHeaders.UserAgent.Add(
                 new ProductInfoHeaderValue("AIO-Hybrid-Clipboard", CurrentVersion.ToString()));
             http.DefaultRequestHeaders.Accept.Add(
