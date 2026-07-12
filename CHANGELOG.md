@@ -4,7 +4,7 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.6.0] - 2026-07-12
 
 ### Changed
 - Full MVVM migration: new `MainViewModel` owns application state and behavior
@@ -96,6 +96,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Initial release: WPF clipboard manager with native C++/WinRT OCR engine,
   screenshot gallery, drag & drop export, global hotkeys, system tray, EN/TR UI
 
+[1.6.0]: https://github.com/Layellie/AIO-Hybrid-Clipboard/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/Layellie/AIO-Hybrid-Clipboard/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/Layellie/AIO-Hybrid-Clipboard/compare/v1.3.0...v1.4.0
 [1.3.1]: https://github.com/Layellie/AIO-Hybrid-Clipboard/compare/v1.3.0...v1.4.0

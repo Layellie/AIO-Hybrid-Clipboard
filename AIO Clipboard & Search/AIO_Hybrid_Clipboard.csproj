@@ -10,7 +10,7 @@
     <Platforms>AnyCPU;x64</Platforms>
     <AssemblyTitle>AIO Hybrid Clipboard</AssemblyTitle>
     <ApplicationIcon>app_icon.ico</ApplicationIcon>
-    <Version>1.5.0</Version>
+    <Version>1.6.0</Version>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <Authors>Samet Kaşmer</Authors>
     <Product>AIO Hybrid Clipboard</Product>

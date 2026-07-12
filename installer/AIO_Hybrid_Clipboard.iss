@@ -13,7 +13,7 @@
 #define MyAppName "AIO Hybrid Clipboard"
 ; Overridable from the command line: iscc /DMyAppVersion=1.5.0 ...
 #ifndef MyAppVersion
-  #define MyAppVersion "1.5.0"
+  #define MyAppVersion "1.6.0"
 #endif
 #define MyAppPublisher "Samet Kasmer"
 #define MyAppURL "https://github.com/Layellie/AIO-Hybrid-Clipboard"
