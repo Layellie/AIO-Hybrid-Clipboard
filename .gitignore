@@ -361,3 +361,9 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+# Release artifacts & local screenshots (attach to GitHub Releases instead)
+*.zip
+screenshot_*.png
+
+# Runtime screenshot/session cache
+AIO_Cache/

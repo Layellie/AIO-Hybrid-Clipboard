@@ -8,19 +8,21 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <Platforms>AnyCPU;x64</Platforms>
-    <AssemblyTitle>AIO_Hybrid_Clipboard</AssemblyTitle>
+    <AssemblyTitle>AIO Hybrid Clipboard</AssemblyTitle>
     <ApplicationIcon>app_icon.ico</ApplicationIcon>
-    <Version>1.3.0</Version>
+    <Version>1.3.1</Version>
+    <Authors>Samet Kaşmer</Authors>
+    <Product>AIO Hybrid Clipboard</Product>
+    <Description>Hybrid (C# WPF + C++/WinRT) clipboard manager for Windows with a built-in OCR engine.</Description>
+    <Copyright>© 2026 Samet Kaşmer</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/Layellie/AIO-Hybrid-Clipboard</RepositoryUrl>
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="app_icon.ico" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Update="app_icon.ico">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
+    <Content Include="app_icon.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>

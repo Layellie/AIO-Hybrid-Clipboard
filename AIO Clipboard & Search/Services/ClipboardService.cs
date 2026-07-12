@@ -2,6 +2,7 @@ using AIO_Hybrid_Clipboard.Models;
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media.Imaging;
 using static AIO_Hybrid_Clipboard.Services.Win32Api;
@@ -10,6 +11,9 @@ namespace AIO_Hybrid_Clipboard.Services
 {
     internal sealed class ClipboardService : IDisposable
     {
+        // Guard window against the same image clipboard event firing multiple times.
+        private const int ImageDebounceMs = 800;
+
         private readonly IntPtr _hwnd;
         private DateTime _lastScreenshotTime = DateTime.MinValue;
 
@@ -21,55 +25,72 @@ namespace AIO_Hybrid_Clipboard.Services
         public void Start() => AddClipboardFormatListener(_hwnd);
         public void Stop()  => RemoveClipboardFormatListener(_hwnd);
 
+        /// <summary>Puts text on the clipboard without recording it as a new history entry.</summary>
         public void SetClipboardSilent(string text)
         {
             Stop();
-            Clipboard.SetText(text);
-            Start();
+            try { Clipboard.SetText(text); }
+            finally { Start(); } // never leave the listener detached, even if SetText throws
         }
 
-        public void HandleClipboardUpdate()
+        public async void HandleClipboardUpdate()
         {
             try
             {
                 if (Clipboard.ContainsText())
                 {
                     string text = Clipboard.GetText().Trim();
-                    if (!string.IsNullOrEmpty(text) && !text.StartsWith("[OCR:"))
+                    if (!string.IsNullOrEmpty(text) && !OcrService.IsPlaceholder(text))
                         TextCaptured?.Invoke(text);
                 }
                 else if (Clipboard.ContainsImage())
                 {
-                    if ((DateTime.Now - _lastScreenshotTime).TotalMilliseconds < 800) return;
+                    if ((DateTime.Now - _lastScreenshotTime).TotalMilliseconds < ImageDebounceMs) return;
                     _lastScreenshotTime = DateTime.Now;
 
                     var img = Clipboard.GetImage();
                     if (img == null) return;
 
-                    string cacheFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "AIO_Cache");
-                    if (!Directory.Exists(cacheFolder)) Directory.CreateDirectory(cacheFolder);
-
-                    string fileName = $"snap_{DateTime.Now:yyyyMMdd_HHmmss}.png";
-                    string fullPath = Path.Combine(cacheFolder, fileName);
-
-                    using (var fs = new FileStream(fullPath, FileMode.Create))
-                    {
-                        var encoder = new PngBitmapEncoder();
-                        encoder.Frames.Add(BitmapFrame.Create(img));
-                        encoder.Save(fs);
-                    }
-
+                    // Grab the raw pixels on the UI thread (a cheap copy), then push the
+                    // expensive PNG encode + disk write to the thread pool so the UI
+                    // never stalls on large captures.
                     int width  = img.PixelWidth;
                     int height = img.PixelHeight;
                     int stride = width * ((img.Format.BitsPerPixel + 7) / 8);
                     byte[] pixels = new byte[height * stride];
                     img.CopyPixels(pixels, stride, 0);
 
+                    BitmapSource source = img;
+                    if (source.CanFreeze)
+                    {
+                        source.Freeze();
+                    }
+                    else
+                    {
+                        // Rebuild from the pixels we just copied so the bitmap can be
+                        // frozen and safely touched from the encoder thread.
+                        source = BitmapSource.Create(width, height, img.DpiX, img.DpiY,
+                                                     img.Format, img.Palette, pixels, stride);
+                        source.Freeze();
+                    }
+
+                    var capturedAt  = DateTime.Now;
+                    string fullPath = Path.Combine(AppPaths.CacheFolder, $"snap_{capturedAt:yyyyMMdd_HHmmss}.png");
+
+                    await Task.Run(() =>
+                    {
+                        AppPaths.EnsureCacheFolder();
+                        using var fs = new FileStream(fullPath, FileMode.Create);
+                        var encoder = new PngBitmapEncoder();
+                        encoder.Frames.Add(BitmapFrame.Create(source));
+                        encoder.Save(fs);
+                    });
+
                     var model = new ScreenshotModel
                     {
-                        Name    = $"Capture - {DateTime.Now:HH:mm:ss}",
+                        Name    = $"Capture - {capturedAt:HH:mm:ss}",
                         Path    = fullPath,
-                        Image   = img,
+                        Image   = source,
                         OcrText = string.Empty
                     };
 

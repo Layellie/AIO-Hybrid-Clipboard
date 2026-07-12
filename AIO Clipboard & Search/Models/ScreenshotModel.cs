@@ -9,7 +9,15 @@ namespace AIO_Hybrid_Clipboard.Models
         public string Name { get; set; } = string.Empty;
         public string Path { get; set; } = string.Empty;
         public BitmapSource? Image { get; set; }
-        public string OcrText { get; set; } = string.Empty;
+
+        // OCR completes on a background task after the model is already displayed,
+        // so this property must raise change notifications.
+        private string _ocrText = string.Empty;
+        public string OcrText
+        {
+            get => _ocrText;
+            set { if (_ocrText != value) { _ocrText = value; OnPropertyChanged(); } }
+        }
 
         private bool _isPinned;
         public bool IsPinned

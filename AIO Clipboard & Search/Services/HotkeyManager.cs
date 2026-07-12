@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using static AIO_Hybrid_Clipboard.Services.Win32Api;
 
@@ -30,14 +31,16 @@ namespace AIO_Hybrid_Clipboard.Services
             uint mod = CurrentModifier | MOD_NOREPEAT;
 
             UnregisterHotKey(_hwnd, HOTKEY_ID);
-            RegisterHotKey(_hwnd, HOTKEY_ID, mod, CurrentKey);
+            if (!RegisterHotKey(_hwnd, HOTKEY_ID, mod, CurrentKey))
+                Debug.WriteLine("[AIO] RegisterHotKey failed for toggle hotkey — combo may be in use by another app.");
 
             UnregisterHotKey(_hwnd, QUICKPASTE_ID_1);
             UnregisterHotKey(_hwnd, QUICKPASTE_ID_2);
             UnregisterHotKey(_hwnd, QUICKPASTE_ID_3);
-            RegisterHotKey(_hwnd, QUICKPASTE_ID_1, mod, 0x31);
-            RegisterHotKey(_hwnd, QUICKPASTE_ID_2, mod, 0x32);
-            RegisterHotKey(_hwnd, QUICKPASTE_ID_3, mod, 0x33);
+            if (!RegisterHotKey(_hwnd, QUICKPASTE_ID_1, mod, 0x31) |
+                !RegisterHotKey(_hwnd, QUICKPASTE_ID_2, mod, 0x32) |
+                !RegisterHotKey(_hwnd, QUICKPASTE_ID_3, mod, 0x33))
+                Debug.WriteLine("[AIO] RegisterHotKey failed for one or more quick-paste hotkeys.");
         }
 
         public void Unregister()

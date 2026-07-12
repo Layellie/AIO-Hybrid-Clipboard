@@ -3,7 +3,7 @@
 <img width="900" alt="AIO Hybrid Clipboard screenshot" src="https://github.com/Layellie/AIO-Hybrid-Clipboard/releases/download/v1.3.0/screenshot_v1.3.0.png" />
 
 ![Platform](https://img.shields.io/badge/Platform-Windows%2010%20%7C%2011-blue?style=flat-square&logo=windows)
-![Version](https://img.shields.io/badge/Version-v1.3.0-blueviolet?style=flat-square)
+![Version](https://img.shields.io/badge/Version-v1.3.1-blueviolet?style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
 ![C++](https://img.shields.io/badge/Engine-C%2B%2B%2020-00599C?style=flat-square&logo=c%2B%2B)
 ![C#](https://img.shields.io/badge/Frontend-C%23%20WPF-239120?style=flat-square&logo=c-sharp)

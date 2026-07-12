@@ -223,9 +223,14 @@ namespace AIO_Hybrid_Clipboard
                 if (!string.IsNullOrEmpty(ocrResult))
                 {
                     model.OcrText = ocrResult;
-                    InsertText(ocrResult);
-                    ApplyFilter();
-                    _clipboard?.SetClipboardSilent(ocrResult);
+                    // Engine status messages ("[OCR: ...]") are shown on the model
+                    // but never copied to the clipboard or recorded as history.
+                    if (!OcrService.IsPlaceholder(ocrResult))
+                    {
+                        InsertText(ocrResult);
+                        ApplyFilter();
+                        _clipboard?.SetClipboardSilent(ocrResult);
+                    }
                 }
             }
             catch (Exception ex)
@@ -237,7 +242,7 @@ namespace AIO_Hybrid_Clipboard
         // --- COPY & HIDE ---
         private void CopyBackAndHide(string? text)
         {
-            if (string.IsNullOrEmpty(text) || text.StartsWith("[OCR:")) return;
+            if (string.IsNullOrEmpty(text) || OcrService.IsPlaceholder(text)) return;
             try { _clipboard?.SetClipboardSilent(text); } catch (Exception ex) { Debug.WriteLine($"[AIO] SetClipboard failed: {ex.Message}"); }
             if (ChkHideOnCopy.IsChecked == true) this.Hide();
         }
@@ -394,7 +399,7 @@ namespace AIO_Hybrid_Clipboard
             }
         }
 
-        private T? FindVisualChild<T>(DependencyObject obj) where T : DependencyObject
+        private static T? FindVisualChild<T>(DependencyObject obj) where T : DependencyObject
         {
             for (int i = 0; i < VisualTreeHelper.GetChildrenCount(obj); i++)
             {

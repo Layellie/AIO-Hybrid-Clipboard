@@ -11,15 +11,13 @@ namespace AIO_Hybrid_Clipboard.Services
 {
     internal static class SessionStore
     {
-        private static string FilePath =>
-            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "AIO_Cache", "session.json");
+        private static string FilePath => AppPaths.SessionFile;
 
         public static void Save(IEnumerable<ClipItem> texts, IEnumerable<ScreenshotModel> screenshots)
         {
             try
             {
-                string folder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "AIO_Cache");
-                if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
+                AppPaths.EnsureCacheFolder();
 
                 var data = new
                 {
@@ -36,7 +34,7 @@ namespace AIO_Hybrid_Clipboard.Services
         {
             try
             {
-                string folder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "AIO_Cache");
+                string folder = AppPaths.CacheFolder;
                 if (!Directory.Exists(folder)) return;
 
                 var keep = new HashSet<string>(
