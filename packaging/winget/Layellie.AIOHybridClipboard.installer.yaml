@@ -11,6 +11,6 @@ UpgradeBehavior: install
 Installers:
   - Architecture: x64
     InstallerUrl: https://github.com/Layellie/AIO-Hybrid-Clipboard/releases/download/v1.5.0/AIO_Hybrid_Clipboard_Setup_v1.5.0.exe
-    InstallerSha256: 8147E9AE0BEB6FA6C596B70E3FE36961262507DD2F9C4F47D021E8E8AF76733A
+    InstallerSha256: D968B0FD2207372F9BFF9C7F1E515AF9747D2E547DAEBD0C2EF3C38F6BC9E976
 ManifestType: installer
 ManifestVersion: 1.6.0
