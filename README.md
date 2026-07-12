@@ -1,9 +1,13 @@
 # AIO Hybrid Clipboard
 
+**English** | [Türkçe](README.tr.md)
+
 <img width="900" alt="AIO Hybrid Clipboard screenshot" src="https://github.com/Layellie/AIO-Hybrid-Clipboard/releases/download/v1.3.0/screenshot_v1.3.0.png" />
 
+[![CI](https://github.com/Layellie/AIO-Hybrid-Clipboard/actions/workflows/ci.yml/badge.svg)](https://github.com/Layellie/AIO-Hybrid-Clipboard/actions/workflows/ci.yml)
+[![Downloads](https://img.shields.io/github/downloads/Layellie/AIO-Hybrid-Clipboard/total?style=flat-square&color=success)](https://github.com/Layellie/AIO-Hybrid-Clipboard/releases)
+[![Release](https://img.shields.io/github/v/release/Layellie/AIO-Hybrid-Clipboard?style=flat-square&color=blueviolet)](https://github.com/Layellie/AIO-Hybrid-Clipboard/releases/latest)
 ![Platform](https://img.shields.io/badge/Platform-Windows%2010%20%7C%2011-blue?style=flat-square&logo=windows)
-![Version](https://img.shields.io/badge/Version-v1.4.0-blueviolet?style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
 ![C++](https://img.shields.io/badge/Engine-C%2B%2B%2020-00599C?style=flat-square&logo=c%2B%2B)
 ![C#](https://img.shields.io/badge/Frontend-C%23%20WPF-239120?style=flat-square&logo=c-sharp)
@@ -113,10 +117,35 @@ copy "AIO_SearchEngine\x64\Release\AIO_SearchEngine.dll" "AIO Clipboard & Search
 
 ## Architecture
 
-The solution contains two projects:
+The solution contains three projects:
 
-- **`AIO Clipboard & Search/`** — WPF application. Logic is split into SRP-compliant service classes (`ClipboardService`, `HotkeyManager`, `OcrService`, `TrayIconService`, `SessionStore`, `SettingsService`, `StartupService`) with a thin UI-only `MainWindow`.
-- **`AIO_SearchEngine/`** — Native C++ DLL exposing a single `ProcessImageOCR` function. Accepts raw BGRA8 pixel data, runs `OcrEngine::RecognizeAsync` synchronously via C++/WinRT, and writes the result to a caller-supplied wide-char buffer.
+- **`AIO Clipboard & Search/`** — WPF application. Logic is split into SRP-compliant service classes (`HistoryService`, `ClipboardService`, `HotkeyManager`, `OcrService`, `UpdateService`, `TrayIconService`, `SessionStore`, `SettingsService`, `StartupService`, `Log`) with a thin UI-only `MainWindow`. UI strings live in standard `.resx` resources (EN/TR).
+- **`AIO_SearchEngine/`** — Native C++ DLL exposing a single `ProcessImageOCR` function. Accepts raw BGRA8 pixel data, runs `OcrEngine::RecognizeAsync` via C++/WinRT and returns a typed status code alongside the recognized text.
+- **`AIO_Hybrid_Clipboard.Tests/`** — xUnit suite: unit tests for the history/pinning rules, session persistence and localization, plus integration tests that exercise the real native OCR engine.
+
+Every push is built and tested by [CI](https://github.com/Layellie/AIO-Hybrid-Clipboard/actions); pushing a `v*` tag automatically builds the installer and publishes a release.
+
+## FAQ
+
+**Windows SmartScreen warns me when running the installer. Why?**
+The installer is not code-signed (certificates cost money for a free open-source tool). The source is fully public and every release is built from it — click *More info → Run anyway*. You can verify the SHA-256 digest shown on each release's page.
+
+**Where is my data stored?**
+Everything stays on your machine: history and screenshots live in `AIO_Cache/` next to the executable. The only network call is the update check against the GitHub Releases API.
+
+**Why x64 only?**
+The OCR engine is a native x64 DLL consumed over P/Invoke; an ARM64/x86 build of the app would fail to load it.
+
+**A hotkey doesn't work.**
+Another app probably registered the same combination first. Pick a different combo in Settings; failures are recorded in `AIO_Cache/app.log`.
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+## Contributing
+
+Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) first — it covers the build setup, project layout and PR expectations.
 
 ## License
 

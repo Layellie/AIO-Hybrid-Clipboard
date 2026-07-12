@@ -1,0 +1,42 @@
+name: Bug Report
+description: Something isn't working as expected
+labels: [bug]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: A clear description of the bug.
+      placeholder: When I press ALT+SPACE after ...
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Copy an image with WIN+SHIFT+S
+        2. Click the thumbnail
+        3. ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: App version
+      description: Shown in the settings drawer (gear icon).
+      placeholder: v1.5.0
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Windows version
+      placeholder: Windows 11 24H2
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log file
+      description: >
+        Attach `AIO_Cache/app.log` from the installation folder
+        (`%LOCALAPPDATA%\Programs\AIO Hybrid Clipboard\AIO_Cache\app.log`).

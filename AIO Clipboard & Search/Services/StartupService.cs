@@ -1,6 +1,5 @@
 using Microsoft.Win32;
 using System;
-using System.Diagnostics;
 using System.Reflection;
 
 namespace AIO_Hybrid_Clipboard.Services
@@ -17,7 +16,7 @@ namespace AIO_Hybrid_Clipboard.Services
                 using var rk = Registry.CurrentUser.OpenSubKey(RunKey, false);
                 return rk?.GetValue(ValueName) != null;
             }
-            catch (Exception ex) { Debug.WriteLine($"[AIO] Startup read failed: {ex.Message}"); return false; }
+            catch (Exception ex) { Log.Warn($"Startup read failed: {ex.Message}"); return false; }
         }
 
         public static void Set(bool enable)
@@ -29,7 +28,7 @@ namespace AIO_Hybrid_Clipboard.Services
                 if (enable) rk.SetValue(ValueName, Environment.ProcessPath ?? Assembly.GetExecutingAssembly().Location);
                 else rk.DeleteValue(ValueName, false);
             }
-            catch (Exception ex) { Debug.WriteLine($"[AIO] Startup write failed: {ex.Message}"); }
+            catch (Exception ex) { Log.Warn($"Startup write failed: {ex.Message}"); }
         }
     }
 }

@@ -1,7 +1,6 @@
 using AIO_Hybrid_Clipboard.Models;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
@@ -26,7 +25,7 @@ namespace AIO_Hybrid_Clipboard.Services
                 };
                 File.WriteAllText(FilePath, JsonSerializer.Serialize(data));
             }
-            catch (Exception ex) { Debug.WriteLine($"[AIO] Session save failed: {ex.Message}"); }
+            catch (Exception ex) { Log.Error("Session save failed", ex); }
         }
 
         /// <summary>Deletes cached PNG files no longer referenced by a live screenshot.</summary>
@@ -45,10 +44,10 @@ namespace AIO_Hybrid_Clipboard.Services
                 {
                     if (keep.Contains(Path.GetFullPath(file))) continue;
                     try { File.Delete(file); }
-                    catch (Exception ex) { Debug.WriteLine($"[AIO] Orphan cache delete failed: {ex.Message}"); }
+                    catch (Exception ex) { Log.Warn($"Orphan cache delete failed: {ex.Message}"); }
                 }
             }
-            catch (Exception ex) { Debug.WriteLine($"[AIO] Cache cleanup failed: {ex.Message}"); }
+            catch (Exception ex) { Log.Warn($"Cache cleanup failed: {ex.Message}"); }
         }
 
         public static (List<ClipItem> texts, List<ScreenshotModel> screenshots) Load()
@@ -97,10 +96,10 @@ namespace AIO_Hybrid_Clipboard.Services
                             img.Freeze();
                             shots.Add(new ScreenshotModel { Name = name, Path = path, Image = img, OcrText = ocrText, IsPinned = pinned });
                         }
-                        catch (Exception ex) { Debug.WriteLine($"[AIO] Load screenshot image failed: {ex.Message}"); }
+                        catch (Exception ex) { Log.Warn($"Load screenshot image failed: {ex.Message}"); }
                     }
             }
-            catch (Exception ex) { Debug.WriteLine($"[AIO] Session load failed: {ex.Message}"); }
+            catch (Exception ex) { Log.Error("Session load failed", ex); }
             return (texts, shots);
         }
     }

@@ -11,7 +11,10 @@
 ; which would fail under Program Files.
 
 #define MyAppName "AIO Hybrid Clipboard"
-#define MyAppVersion "1.4.0"
+; Overridable from the command line: iscc /DMyAppVersion=1.5.0 ...
+#ifndef MyAppVersion
+  #define MyAppVersion "1.5.0"
+#endif
 #define MyAppPublisher "Samet Kasmer"
 #define MyAppURL "https://github.com/Layellie/AIO-Hybrid-Clipboard"
 #define MyAppExeName "AIO_Hybrid_Clipboard.exe"

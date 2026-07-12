@@ -1,0 +1,16 @@
+# Installer manifest — winget-pkgs: manifests/l/Layellie/AIOHybridClipboard/1.5.0/
+PackageIdentifier: Layellie.AIOHybridClipboard
+PackageVersion: 1.5.0
+InstallerType: inno
+Scope: user
+InstallModes:
+  - interactive
+  - silent
+  - silentWithProgress
+UpgradeBehavior: install
+Installers:
+  - Architecture: x64
+    InstallerUrl: https://github.com/Layellie/AIO-Hybrid-Clipboard/releases/download/v1.5.0/AIO_Hybrid_Clipboard_Setup_v1.5.0.exe
+    InstallerSha256: 8147E9AE0BEB6FA6C596B70E3FE36961262507DD2F9C4F47D021E8E8AF76733A
+ManifestType: installer
+ManifestVersion: 1.6.0

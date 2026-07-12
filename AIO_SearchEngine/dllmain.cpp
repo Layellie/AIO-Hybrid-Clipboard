@@ -1,7 +1,7 @@
-﻿#include "pch.h"
+#include "pch.h"
 #include <windows.h>
+#include <cstring>
 #include <string>
-#include <vector>
 
 // Windows Runtime C++/WinRT headers for OCR and Imaging API
 #include <winrt/Windows.Foundation.h>
@@ -9,6 +9,7 @@
 #include <winrt/Windows.Media.Ocr.h>
 #include <winrt/Windows.Storage.Streams.h>
 #include <winrt/Windows.Globalization.h>
+#include <MemoryBuffer.h>
 
 // Link the required Windows Runtime core library
 #pragma comment(lib, "windowsapp.lib")
@@ -16,17 +17,28 @@
 using namespace winrt;
 using namespace winrt::Windows::Graphics::Imaging;
 using namespace winrt::Windows::Media::Ocr;
-using namespace winrt::Windows::Storage::Streams;
 using namespace winrt::Windows::Globalization;
 
+namespace
+{
+    // Status codes returned to the managed caller.
+    // Keep in sync with OcrService.OcrStatus in the C# project.
+    constexpr int kOcrSuccess         = 0;
+    constexpr int kOcrNoText          = 1;
+    constexpr int kOcrEngineFailed    = -1;
+    constexpr int kOcrException       = -2;
+    constexpr int kOcrInvalidArgument = -3;
+}
+
 // DLL Entry Point
-BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
+BOOL APIENTRY DllMain(HMODULE, DWORD, LPVOID)
 {
     return TRUE;
 }
 
-// Main OCR Processing Function exported for C# P/Invoke
-extern "C" __declspec(dllexport) void __cdecl ProcessImageOCR(
+// Runs the Windows OCR engine over raw BGRA8 pixel data.
+// Returns a status code; recognized text is written to outText only on success.
+extern "C" __declspec(dllexport) int __cdecl ProcessImageOCR(
     const unsigned char* pixelData,
     int width,
     int height,
@@ -35,43 +47,53 @@ extern "C" __declspec(dllexport) void __cdecl ProcessImageOCR(
     int maxLen
 )
 {
+    if (!pixelData || !outText || maxLen <= 0 || width <= 0 || height <= 0 || stride < width * 4)
+        return kOcrInvalidArgument;
+
+    outText[0] = L'\0';
+
     try {
         // Initialize the WinRT apartment state for multi-threaded safety
         winrt::init_apartment(winrt::apartment_type::multi_threaded);
 
-        // Write raw pixel data into a WinRT data buffer
-        DataWriter writer;
-        writer.WriteBytes(winrt::array_view<const uint8_t>(pixelData, pixelData + (height * stride)));
-        IBuffer buffer = writer.DetachBuffer();
+        // Copy the pixel rows straight into the SoftwareBitmap's backing buffer —
+        // a single copy, instead of staging through an intermediate IBuffer.
+        SoftwareBitmap bitmap(BitmapPixelFormat::Bgra8, width, height, BitmapAlphaMode::Premultiplied);
+        {
+            BitmapBuffer buffer = bitmap.LockBuffer(BitmapBufferAccessMode::Write);
+            auto reference = buffer.CreateReference();
+            auto byteAccess = reference.as<::Windows::Foundation::IMemoryBufferByteAccess>();
 
-        // Create a SoftwareBitmap from the buffer using BGRA8 format matching WPF specifications
-        SoftwareBitmap bitmap = SoftwareBitmap::CreateCopyFromBuffer(buffer, BitmapPixelFormat::Bgra8, width, height, BitmapAlphaMode::Premultiplied);
+            uint8_t* dest = nullptr;
+            uint32_t capacity = 0;
+            winrt::check_hresult(byteAccess->GetBuffer(&dest, &capacity));
 
-        // Initialize OCR engine using the system's configured user languages (supports EN and TR simultaneously)
+            const BitmapPlaneDescription plane = buffer.GetPlaneDescription(0);
+            const int rowBytes = width * 4;
+            for (int y = 0; y < height; ++y)
+                memcpy(dest + plane.StartIndex + static_cast<size_t>(y) * plane.Stride,
+                       pixelData + static_cast<size_t>(y) * stride,
+                       rowBytes);
+        }
+
+        // Prefer the user's configured languages (supports EN and TR simultaneously),
+        // falling back to standard English.
         OcrEngine engine = OcrEngine::TryCreateFromUserProfileLanguages();
-        if (!engine) {
-            // Fallback to standard English if user profile languages are unavailable
+        if (!engine)
             engine = OcrEngine::TryCreateFromLanguage(Language(L"en-US"));
-        }
+        if (!engine)
+            return kOcrEngineFailed;
 
-        if (engine) {
-            // Execute synchronous OCR recognition process
-            OcrResult result = engine.RecognizeAsync(bitmap).get();
-            std::wstring recognizedText = result.Text().c_str();
+        OcrResult result = engine.RecognizeAsync(bitmap).get();
+        const std::wstring recognizedText{ result.Text() };
+        if (recognizedText.empty())
+            return kOcrNoText;
 
-            if (recognizedText.empty()) {
-                wcscpy_s(outText, maxLen, L"[OCR: No readable text found in the image]");
-            }
-            else {
-                wcscpy_s(outText, maxLen, recognizedText.c_str());
-            }
-        }
-        else {
-            wcscpy_s(outText, maxLen, L"[OCR Error: Windows OCR engine failed to initialize]");
-        }
+        wcsncpy_s(outText, maxLen, recognizedText.c_str(), _TRUNCATE);
+        return kOcrSuccess;
     }
     catch (...) {
-        // Prevent application crashes by catching unexpected memory or structural exceptions
-        wcscpy_s(outText, maxLen, L"[OCR Error: A memory exception occurred during processing]");
+        // Never let a native exception cross the P/Invoke boundary.
+        return kOcrException;
     }
 }

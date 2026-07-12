@@ -1,6 +1,5 @@
 using AIO_Hybrid_Clipboard.Models;
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
@@ -97,7 +96,7 @@ namespace AIO_Hybrid_Clipboard.Services
                     ImageCaptured?.Invoke(model, pixels, width, height, stride);
                 }
             }
-            catch (Exception ex) { Debug.WriteLine($"[AIO] ClipboardUpdate error: {ex.Message}"); }
+            catch (Exception ex) { Log.Error("Clipboard update handling failed", ex); }
         }
 
         public void Dispose() => Stop();

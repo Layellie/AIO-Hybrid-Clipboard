@@ -28,7 +28,7 @@ namespace AIO_Hybrid_Clipboard.Services
 
         // Assembly versions carry a 4th (revision) component and release tags don't;
         // compare everything as Major.Minor.Build.
-        private static Version Normalize(Version v) =>
+        internal static Version Normalize(Version v) =>
             new(v.Major, Math.Max(v.Minor, 0), Math.Max(v.Build, 0));
 
         /// <summary>Returns the latest release info, or null when it cannot be determined.</summary>

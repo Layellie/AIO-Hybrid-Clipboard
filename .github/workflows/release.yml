@@ -1,0 +1,50 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build-installer:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Build native OCR engine (Release x64)
+        run: msbuild AIO_SearchEngine/AIO_SearchEngine.vcxproj /p:Configuration=Release /p:Platform=x64 /v:minimal
+
+      - name: Run tests
+        run: dotnet test AIO_Hybrid_Clipboard.Tests/AIO_Hybrid_Clipboard.Tests.csproj -c Release
+
+      - name: Publish self-contained app
+        run: dotnet publish "AIO Clipboard & Search/AIO_Hybrid_Clipboard.csproj" -c Release -r win-x64 --self-contained true -p:Platform=x64
+
+      - name: Copy native DLL into publish folder
+        run: Copy-Item "AIO_SearchEngine/x64/Release/AIO_SearchEngine.dll" "AIO Clipboard & Search/bin/x64/Release/net10.0-windows/win-x64/publish/"
+
+      - name: Install Inno Setup
+        run: choco install innosetup -y --no-progress
+
+      - name: Compile installer
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart("v")
+          iscc "/DMyAppVersion=$version" installer/AIO_Hybrid_Clipboard.iss
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: installer/Output/*.exe
+          generate_release_notes: true

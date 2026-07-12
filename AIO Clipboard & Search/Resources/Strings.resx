@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="HideOnCopy" xml:space="preserve">
+    <value>Automatically hide menu on new selection</value>
+  </data>
+  <data name="StartWithWindows" xml:space="preserve">
+    <value>Start with Windows</value>
+  </data>
+  <data name="ShortcutKey" xml:space="preserve">
+    <value>Shortcut Key: </value>
+  </data>
+  <data name="Language" xml:space="preserve">
+    <value>Language: </value>
+  </data>
+  <data name="TrayOpen" xml:space="preserve">
+    <value>Open</value>
+  </data>
+  <data name="TrayExit" xml:space="preserve">
+    <value>Exit</value>
+  </data>
+  <data name="InitialMsg" xml:space="preserve">
+    <value>AIO OCR Clipboard Active! Capture images to process... 🚀</value>
+  </data>
+  <data name="OcrError" xml:space="preserve">
+    <value>OCR Error</value>
+  </data>
+  <data name="OcrException" xml:space="preserve">
+    <value>OCR Processing Exception: </value>
+  </data>
+  <data name="OcrNoText" xml:space="preserve">
+    <value>No readable text found in this image.</value>
+  </data>
+  <data name="Version" xml:space="preserve">
+    <value>Version: </value>
+  </data>
+  <data name="CheckUpdates" xml:space="preserve">
+    <value>Check for updates</value>
+  </data>
+  <data name="UpdateChecking" xml:space="preserve">
+    <value>Checking for updates...</value>
+  </data>
+  <data name="UpdateUpToDate" xml:space="preserve">
+    <value>You are on the latest version.</value>
+  </data>
+  <data name="UpdateAvailable" xml:space="preserve">
+    <value>New version v{0} is available!</value>
+  </data>
+  <data name="UpdatePrompt" xml:space="preserve">
+    <value>Version v{0} is available. Download and install it now?</value>
+  </data>
+  <data name="UpdateTitle" xml:space="preserve">
+    <value>Update Available</value>
+  </data>
+  <data name="UpdateDownloading" xml:space="preserve">
+    <value>Downloading update... The app will restart.</value>
+  </data>
+  <data name="UpdateFailed" xml:space="preserve">
+    <value>Update check failed. Please try again later.</value>
+  </data>
+</root>

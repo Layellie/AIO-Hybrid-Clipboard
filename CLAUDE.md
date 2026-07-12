@@ -4,77 +4,75 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Solution Overview
 
-This is a two-project Visual Studio solution (`AIO Hybrid Clipboard.slnx`):
+This is a three-project Visual Studio solution (`AIO Hybrid Clipboard.slnx`):
 
-- **`AIO Clipboard & Search/`** — C# WPF application targeting .NET 10.0-windows (`AIO_Hybrid_Clipboard.csproj`). The entire UI and application logic lives in a single window (`MainWindow.xaml` / `MainWindow.xaml.cs`). No MVVM pattern — all logic is in code-behind.
-- **`AIO_SearchEngine/`** — Native C++ DLL (`AIO_SearchEngine.vcxproj`) that wraps the Windows Runtime OCR API (`Windows.Media.Ocr`). Exports a single function `ProcessImageOCR` via C-style linkage for P/Invoke consumption.
+- **`AIO Clipboard & Search/`** — C# WPF application targeting .NET 10.0-windows (`AIO_Hybrid_Clipboard.csproj`). A thin code-behind `MainWindow` delegates to SRP service classes under `Services/`.
+- **`AIO_SearchEngine/`** — Native C++ DLL (`AIO_SearchEngine.vcxproj`, toolset **v143**) that wraps the Windows Runtime OCR API (`Windows.Media.Ocr`). Exports a single function `ProcessImageOCR` via C-style linkage for P/Invoke consumption; returns a typed status code.
+- **`AIO_Hybrid_Clipboard.Tests/`** — xUnit tests: unit tests for history/pinning rules, session persistence and localization, plus integration tests that call the real native OCR DLL.
 
 ## Build
 
-Build using Visual Studio 2022 or MSBuild. The C++ project must be built as **x64** before the C# project, because the post-build event automatically copies `AIO_SearchEngine.dll` to the C# output directory:
+Build using Visual Studio 2022+ or MSBuild. The C++ project must be built as **x64** before the C# project, because the post-build event copies `AIO_SearchEngine.dll` to the C# output directory (the event creates the target folder if needed and works for standalone project builds).
 
 ```
-copy "$(OutDir)AIO_SearchEngine.dll" "$(SolutionDir)AIO_Hybrid_Clipboard\bin\x64\Debug\net10.0-windows\" /Y
+msbuild AIO_SearchEngine\AIO_SearchEngine.vcxproj /p:Configuration=Debug /p:Platform=x64
+dotnet build "AIO Clipboard & Search\AIO_Hybrid_Clipboard.csproj" -p:Platform=x64
 ```
 
-When building the full solution, use the **x64** platform configuration. The C# project supports both `AnyCPU` and `x64`, but the native DLL requires x64 at runtime.
+Warnings are errors (`TreatWarningsAsErrors`) in the C# project.
+
+### Tests
 
 ```
-msbuild "AIO Hybrid Clipboard.slnx" /p:Configuration=Debug /p:Platform=x64
+msbuild AIO_SearchEngine\AIO_SearchEngine.vcxproj /p:Configuration=Release /p:Platform=x64
+dotnet test AIO_Hybrid_Clipboard.Tests\AIO_Hybrid_Clipboard.Tests.csproj
 ```
 
-There are no automated tests in this project.
+The OCR integration tests need the Release|x64 native DLL; they self-skip when it is absent.
+
+### Installer & Releases
+
+`installer/AIO_Hybrid_Clipboard.iss` (Inno Setup 6) packages a self-contained `dotnet publish -r win-x64` output; per-user install (no UAC) because the app writes `AIO_Cache/` next to the exe. Pushing a `v*` tag triggers `.github/workflows/release.yml`, which builds everything, compiles the installer (version injected via `/DMyAppVersion`) and publishes the GitHub release. `ci.yml` builds + tests every push/PR. Release flow: bump `<Version>` in the csproj, update `CHANGELOG.md`, tag, push.
 
 ## Architecture
 
 ### WPF Application (`AIO Clipboard & Search/`)
 
-The window is a borderless, transparent, always-on-top overlay (`WindowStyle="None"`, `AllowsTransparency="True"`, `Topmost="True"`, `ShowInTaskbar="False"`). It appears centered at the top of the screen (15px from top). It is toggled visible/hidden via a configurable global hotkey (default: **Alt+Space**).
+The window is a borderless, transparent, always-on-top overlay toggled via a configurable global hotkey (default: **Alt+Space**). `MainWindow` is UI-only; behavior lives in services:
 
-Win32 APIs are P/Invoked directly from `MainWindow.xaml.cs` for:
-- **Global hotkey**: `RegisterHotKey`/`UnregisterHotKey`, processed via `WM_HOTKEY` in `HwndHook`
-- **Clipboard monitoring**: `AddClipboardFormatListener`/`RemoveClipboardFormatListener`, processed via `WM_CLIPBOARDUPDATE` in `HwndHook`
-- **System tray**: `Shell_NotifyIcon` with `NOTIFYICONDATA`, using a custom `DiscordTrayMenu` context menu defined in XAML
-- **Icon loading**: `LoadImage` reads `app_icon.ico` from the executable directory at startup
+- `HistoryService` — owns the `Texts`/`Screenshots` ObservableCollections and all insertion/pinning/eviction/filter rules (limit 15; pinned entries never auto-evicted and may exceed the cap)
+- `ClipboardService` — `AddClipboardFormatListener` monitoring, 800ms image debounce, silent copy-back (`SetClipboardSilent` re-attaches the listener in `finally`), PNG encode + save on the thread pool
+- `HotkeyManager` — `RegisterHotKey` for toggle + Alt+1/2/3 quick paste, `SendInput`-based paste simulation
+- `OcrService` — P/Invoke into `AIO_SearchEngine.dll`; the native call returns `OcrStatus` codes (`Success/NoText/EngineUnavailable/ProcessingError/InvalidArgument`), empty string means "no text"
+- `UpdateService` — GitHub Releases API version check, installer download + handoff
+- `SessionStore` — JSON persistence in `AIO_Cache/session.json`, orphan PNG cleanup
+- `SettingsService` — registry-backed settings; `T(key)` localization via `Resources/Strings.resx` (EN) / `Strings.tr.resx` (TR)
+- `TrayIconService`, `StartupService`, `Win32Api`, `AppPaths`, `Log` (file logger → `AIO_Cache/app.log`, size-capped)
 
-Data collections:
-- `ClipboardHistory` — `List<string>` of text entries, max 15 items
-- `ScreenshotHistory` — `ObservableCollection<ScreenshotModel>` of image captures, max 15 items
-
-`ScreenshotModel` carries: `Name`, `Path` (saved PNG in `AIO_Cache/`), `Image` (`BitmapSource`), and `OcrText`.
+`App` enforces single instance via mutex; a second launch signals a named `EventWaitHandle` which brings the running window to front.
 
 ### C++ OCR DLL (`AIO_SearchEngine/`)
 
-The DLL exposes one function:
-
 ```cpp
-extern "C" __declspec(dllexport) void __cdecl ProcessImageOCR(
+extern "C" __declspec(dllexport) int __cdecl ProcessImageOCR(
     const unsigned char* pixelData, int width, int height, int stride,
-    wchar_t* outText, int maxLen
-);
+    wchar_t* outText, int maxLen);
 ```
 
-It accepts raw BGRA8 pixel data (matching WPF's `BitmapSource` format), creates a `SoftwareBitmap` via C++/WinRT, then runs `OcrEngine::RecognizeAsync(...).get()` synchronously. The engine first tries `OcrEngine::TryCreateFromUserProfileLanguages()` (supports EN and TR simultaneously), falling back to `en-US`. Requires `windowsapp.lib` and Windows SDK 10.0+.
+Accepts raw BGRA8 pixels, memcpys rows directly into a `SoftwareBitmap` buffer (single copy, via `IMemoryBufferByteAccess`), runs `OcrEngine::RecognizeAsync(...).get()`. Tries `TryCreateFromUserProfileLanguages()` (EN+TR), falls back to `en-US`. Returns status codes kept in sync with `OcrService.OcrStatus`. Never lets exceptions cross the P/Invoke boundary.
 
 ### Cross-component Data Flow
 
-1. Clipboard image captured → saved as PNG to `AIO_Cache/` in the exe directory → `ScreenshotModel` added to `ScreenshotHistory`
-2. OCR runs on a `Task.Run` background thread, calling `ProcessImageOCR` via P/Invoke with the raw pixel bytes
-3. OCR result written to `ScreenshotModel.OcrText` and prepended to `ClipboardHistory`
-4. Click on a screenshot thumbnail triggers OCR on demand (`ExecuteOcrOnScreenshot`)
-5. Drag on a screenshot thumbnail initiates `DragDrop.DoDragDrop` with `DataFormats.FileDrop` pointing to the cached PNG
-
-### Important Behavioral Details
-
-- **Clipboard recursion prevention**: `GeriKopyalaVeGizle` temporarily calls `RemoveClipboardFormatListener` before `Clipboard.SetText` and re-adds it after, preventing the app from recording its own paste-back as a new history entry.
-- **Image debounce**: A 800ms guard (`_lastScreenshotTime`) prevents duplicate captures when the same image clipboard event fires multiple times.
-- **Startup registry**: The app reads/writes `HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run\AIO_ClipboardSearch` for "Start with Windows" support.
-- **Settings drawer**: `PnlSettingsDrawer` is a collapsed `Border` in Grid row 2. It holds hotkey combos and startup/hide checkboxes.
-- **Search**: `TxtSearch_TextChanged` filters both `LstResults` (text) and `LstScreenshots` (by `Name` and `OcrText`) simultaneously using `StringComparison.OrdinalIgnoreCase`.
+1. Clipboard image captured → pixels extracted on UI thread → PNG encoded/saved to `AIO_Cache/` on thread pool → `ScreenshotModel` added via `HistoryService`
+2. OCR runs on a background task through `OcrService`; result lands in `ScreenshotModel.OcrText` (change-notifying)
+3. Click on a thumbnail = on-demand OCR (result also inserted into text history + clipboard); drag = `DataFormats.FileDrop` with the cached PNG
+4. Search filters both lists via `HistoryService.FilterTexts/FilterScreenshots` (OrdinalIgnoreCase, includes OCR text)
 
 ## Development Guidelines & Optimization Rules
 
-- **Memory Management (C++):** Zero tolerance for memory leaks. Always ensure strict RAM management, especially when handling raw pixel data and OCR tasks. Use modern C++ memory management (smart pointers) where applicable, or strictly pair allocations with deallocations.
-- **Latency & Hardware Performance:** System latency must remain completely unaffected by clipboard monitoring. Use the absolute fastest and most lightweight algorithms for background threads and P/Invoke calls.
-- **WPF UI Performance:** UI thread must never be blocked. Keep the 800ms debounce logic perfectly intact and optimize the `BitmapSource` caching mechanism to avoid unnecessary memory spikes.
-- **Code Generation:** When modifying code, do not break the existing borderless window behaviors or the P/Invoke hooks for hotkeys.
+- **Memory Management (C++):** Zero tolerance for memory leaks. Use C++/WinRT RAII idioms; never let exceptions cross the P/Invoke boundary.
+- **Latency:** Clipboard monitoring must not affect system latency; background threads and P/Invoke paths stay lightweight.
+- **WPF UI Performance:** UI thread must never be blocked. Keep the 800ms debounce intact; heavy work (encoding, disk I/O, OCR) belongs on background threads.
+- **Code Generation:** Do not break the borderless window behaviors or the P/Invoke hooks (`HwndHook` handles tray, hotkey and clipboard messages).
+- **Localization:** every user-facing string goes into both `Strings.resx` and `Strings.tr.resx`.
+- **Testing:** logic that can run without the UI belongs in a service with xUnit coverage.

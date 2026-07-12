@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="HideOnCopy" xml:space="preserve">
+    <value>Seçimde menüyü otomatik gizle</value>
+  </data>
+  <data name="StartWithWindows" xml:space="preserve">
+    <value>Windows ile başlat</value>
+  </data>
+  <data name="ShortcutKey" xml:space="preserve">
+    <value>Kısayol Tuşu: </value>
+  </data>
+  <data name="Language" xml:space="preserve">
+    <value>Dil: </value>
+  </data>
+  <data name="TrayOpen" xml:space="preserve">
+    <value>Aç</value>
+  </data>
+  <data name="TrayExit" xml:space="preserve">
+    <value>Çıkış</value>
+  </data>
+  <data name="InitialMsg" xml:space="preserve">
+    <value>AIO OCR Pano Aktif! İşlemek için görüntü yakalayın... 🚀</value>
+  </data>
+  <data name="OcrError" xml:space="preserve">
+    <value>OCR Hatası</value>
+  </data>
+  <data name="OcrException" xml:space="preserve">
+    <value>OCR İşleme Hatası: </value>
+  </data>
+  <data name="OcrNoText" xml:space="preserve">
+    <value>Bu görüntüde okunabilir metin bulunamadı.</value>
+  </data>
+  <data name="Version" xml:space="preserve">
+    <value>Sürüm: </value>
+  </data>
+  <data name="CheckUpdates" xml:space="preserve">
+    <value>Güncellemeleri denetle</value>
+  </data>
+  <data name="UpdateChecking" xml:space="preserve">
+    <value>Güncellemeler denetleniyor...</value>
+  </data>
+  <data name="UpdateUpToDate" xml:space="preserve">
+    <value>En son sürümü kullanıyorsunuz.</value>
+  </data>
+  <data name="UpdateAvailable" xml:space="preserve">
+    <value>Yeni sürüm v{0} mevcut!</value>
+  </data>
+  <data name="UpdatePrompt" xml:space="preserve">
+    <value>v{0} sürümü mevcut. Şimdi indirilip kurulsun mu?</value>
+  </data>
+  <data name="UpdateTitle" xml:space="preserve">
+    <value>Güncelleme Mevcut</value>
+  </data>
+  <data name="UpdateDownloading" xml:space="preserve">
+    <value>Güncelleme indiriliyor... Uygulama yeniden başlatılacak.</value>
+  </data>
+  <data name="UpdateFailed" xml:space="preserve">
+    <value>Güncelleme denetimi başarısız. Lütfen sonra tekrar deneyin.</value>
+  </data>
+</root>

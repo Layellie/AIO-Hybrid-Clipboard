@@ -11,4 +11,5 @@
     <Platform Solution="Debug|x64" Project="x64" />
   </Project>
   <Project Path="AIO_SearchEngine/AIO_SearchEngine.vcxproj" Id="ffa90827-16e8-4912-835b-ab721f20411c" />
+  <Project Path="AIO_Hybrid_Clipboard.Tests/AIO_Hybrid_Clipboard.Tests.csproj" />
 </Solution>
