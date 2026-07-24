@@ -1,3 +1,5 @@
+![AIO Hybrid Clipboard — yerleşik WinRT OCR motoruna sahip hibrit C# WPF ve C++20 pano yöneticisi](docs/banner.png)
+
 # AIO Hybrid Clipboard
 
 [English](README.md) | **Türkçe**
