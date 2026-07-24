@@ -1,3 +1,5 @@
+![AIO Hybrid Clipboard — hybrid C# WPF and C++20 clipboard manager with a built-in WinRT OCR engine](docs/banner.png)
+
 # AIO Hybrid Clipboard
 
 **English** | [Türkçe](README.tr.md)
