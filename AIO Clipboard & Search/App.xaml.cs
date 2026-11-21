@@ -1,5 +1,6 @@
 using AIO_Hybrid_Clipboard.Services;
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -11,9 +12,11 @@ namespace AIO_Hybrid_Clipboard
         private const string MutexName      = "AIO_Hybrid_Clipboard_SingleInstance";
         private const string ShowSignalName = "AIO_Hybrid_Clipboard_ShowSignal";
 
-        private static Mutex? _mutex;
-        private static bool _ownsMutex;
+        private static Mutex?    _mutex;
+        private static bool      _ownsMutex;
         private EventWaitHandle? _showSignal;
+        private MainWindow?      _mainWindow;
+        private volatile bool    _isExiting;
 
         protected override void OnStartup(StartupEventArgs e)
         {
@@ -35,24 +38,43 @@ namespace AIO_Hybrid_Clipboard
 
             base.OnStartup(e);
 
-            var window = new MainWindow();
-            window.Show();
+            bool startMinimizedArg = e.Args.Any(a =>
+                string.Equals(a, StartupService.MinimizedArg, StringComparison.OrdinalIgnoreCase));
+
+            _mainWindow = new MainWindow();
+            MainWindow  = _mainWindow;
+
+            if (startMinimizedArg || _mainWindow.ShouldStartMinimized)
+                _mainWindow.InitializeHidden();
+            else
+                _mainWindow.ShowLauncher();
 
             _showSignal = new EventWaitHandle(false, EventResetMode.AutoReset, ShowSignalName);
             var listener = new Thread(() =>
             {
                 try
                 {
-                    while (_showSignal.WaitOne())
-                        Dispatcher.Invoke(window.ShowLauncher);
+                    while (!_isExiting && _showSignal.WaitOne())
+                    {
+                        if (_isExiting) break;
+                        Dispatcher.BeginInvoke(() => _mainWindow?.ShowLauncher());
+                    }
                 }
                 catch (Exception)
                 {
-                    // Handle is disposed during shutdown; the listener simply ends.
+                    // Handle is disposed during shutdown; the listener ends cleanly.
                 }
             })
             { IsBackground = true, Name = "SecondInstanceListener" };
             listener.Start();
+        }
+
+        protected override void OnSessionEnding(SessionEndingCancelEventArgs e)
+        {
+            // Flush session & release Win32 handles deterministically on Windows logoff/shutdown.
+            _isExiting = true;
+            _mainWindow?.ShutdownCleanup();
+            base.OnSessionEnding(e);
         }
 
         // Last-resort logging: without these hooks an unexpected exception kills
@@ -62,7 +84,7 @@ namespace AIO_Hybrid_Clipboard
             DispatcherUnhandledException += (_, args) =>
             {
                 Log.Error("Unhandled UI exception", args.Exception);
-                args.Handled = true; // keep the tray app alive; state-corrupting bugs still surface in the log
+                args.Handled = true;
             };
 
             AppDomain.CurrentDomain.UnhandledException += (_, args) =>
@@ -77,11 +99,25 @@ namespace AIO_Hybrid_Clipboard
 
         protected override void OnExit(ExitEventArgs e)
         {
+            _isExiting = true;
+            _mainWindow?.ShutdownCleanup();
+
+            // Wake and release the wait handle deterministically.
+            try { _showSignal?.Set(); }
+            catch (ObjectDisposedException) { }
+            _showSignal?.Dispose();
+            _showSignal = null;
+
             // Only the owning instance may release; a second instance never
             // acquired the mutex and releasing it would throw on shutdown.
-            if (_ownsMutex) _mutex?.ReleaseMutex();
+            if (_ownsMutex)
+            {
+                try { _mutex?.ReleaseMutex(); }
+                catch (ApplicationException) { }
+            }
             _mutex?.Dispose();
-            _showSignal?.Dispose();
+            _mutex = null;
+
             base.OnExit(e);
         }
     }

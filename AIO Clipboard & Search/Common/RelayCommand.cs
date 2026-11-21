@@ -3,7 +3,7 @@ using System.Windows.Input;
 
 namespace AIO_Hybrid_Clipboard.Common
 {
-    /// <summary>Minimal ICommand that delegates to callbacks.</summary>
+    /// <summary>Synchronous ICommand that delegates to callbacks.</summary>
     public sealed class RelayCommand : ICommand
     {
         private readonly Action<object?> _execute;
@@ -23,5 +23,7 @@ namespace AIO_Hybrid_Clipboard.Common
             add    => CommandManager.RequerySuggested += value;
             remove => CommandManager.RequerySuggested -= value;
         }
+
+        public static void InvalidateCanExecute() => CommandManager.InvalidateRequerySuggested();
     }
 }

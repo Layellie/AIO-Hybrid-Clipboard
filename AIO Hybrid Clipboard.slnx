@@ -4,7 +4,7 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Folder Name="/Çözüm Öğeleri/">
+  <Folder Name="/Solution Items/">
     <File Path="CLAUDE.md" />
   </Folder>
   <Project Path="AIO Clipboard &amp; Search/AIO_Hybrid_Clipboard.csproj">
