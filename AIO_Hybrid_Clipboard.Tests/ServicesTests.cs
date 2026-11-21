@@ -1,5 +1,6 @@
 using AIO_Hybrid_Clipboard.Models;
 using AIO_Hybrid_Clipboard.Services;
+using System;
 using System.IO;
 using Xunit;
 
@@ -27,6 +28,13 @@ namespace AIO_Hybrid_Clipboard.Tests
             var settings = new SettingsService();
             Assert.Equal("NoSuchKey", settings.T("NoSuchKey"));
         }
+
+        [Fact]
+        public void StartupService_FormatsQuotedPathWithMinimizedFlag()
+        {
+            string cmd = StartupService.FormatStartupCommand(@"C:\Program Files\AIO Hybrid Clipboard\AIO_Hybrid_Clipboard.exe");
+            Assert.Equal("\"C:\\Program Files\\AIO Hybrid Clipboard\\AIO_Hybrid_Clipboard.exe\" --minimized", cmd);
+        }
     }
 
     public class UpdateServiceTests
@@ -34,20 +42,20 @@ namespace AIO_Hybrid_Clipboard.Tests
         [Fact]
         public void Normalize_DropsRevisionComponent()
         {
-            Assert.Equal(new System.Version(1, 5, 0), UpdateService.Normalize(new System.Version(1, 5, 0, 0)));
+            Assert.Equal(new Version(1, 5, 0), UpdateService.Normalize(new Version(1, 5, 0, 0)));
         }
 
         [Fact]
         public void Normalize_FillsMissingComponentsWithZero()
         {
-            Assert.Equal(new System.Version(2, 0, 0), UpdateService.Normalize(new System.Version(2, 0)));
+            Assert.Equal(new Version(2, 0, 0), UpdateService.Normalize(new Version(2, 0)));
         }
 
         [Fact]
         public void Normalize_MakesTagAndAssemblyVersionsComparable()
         {
-            var tag      = UpdateService.Normalize(new System.Version("1.5.0"));
-            var assembly = UpdateService.Normalize(new System.Version("1.5.0.0"));
+            var tag      = UpdateService.Normalize(new Version("2.0.0"));
+            var assembly = UpdateService.Normalize(new Version("2.0.0.0"));
             Assert.Equal(0, tag.CompareTo(assembly));
         }
     }
@@ -69,27 +77,47 @@ namespace AIO_Hybrid_Clipboard.Tests
         }
     }
 
-    // Session persistence roundtrip. These tests share the session.json path
-    // (derived from the test host's base directory), so they live in one class
-    // to run sequentially.
-    public class SessionStoreTests
+    public class SessionStoreTests : IDisposable
     {
-        [Fact]
-        public void SaveThenLoad_RoundtripsTextsAndPins()
+        private readonly string _tempDir;
+        private readonly IDisposable _scope;
+
+        public SessionStoreTests()
         {
+            _tempDir = Path.Combine(Path.GetTempPath(), "aio-session-tests-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(_tempDir);
+            _scope = AppPaths.OverrideCacheFolder(_tempDir);
+        }
+
+        public void Dispose()
+        {
+            _scope.Dispose();
+            try { if (Directory.Exists(_tempDir)) Directory.Delete(_tempDir, recursive: true); }
+            catch { /* best-effort cleanup */ }
+        }
+
+        [Fact]
+        public void SaveThenLoad_RoundtripsTextsPinsAndTimestampsAtomically()
+        {
+            var created = new DateTime(2026, 11, 20, 14, 30, 0);
             var texts = new[]
             {
-                new ClipItem("pinned entry") { IsPinned = true },
+                new ClipItem("pinned entry", created) { IsPinned = true },
                 new ClipItem("plain entry"),
             };
 
-            SessionStore.Save(texts, System.Array.Empty<ScreenshotModel>());
+            SessionStore.Save(texts, Array.Empty<ScreenshotModel>());
+
+            Assert.True(File.Exists(AppPaths.SessionFile));
+            Assert.False(File.Exists(AppPaths.SessionFile + ".tmp")); // atomic move cleaned up .tmp
+
             var (loaded, shots) = SessionStore.Load();
 
             Assert.Empty(shots);
             Assert.Equal(2, loaded.Count);
             Assert.Equal("pinned entry", loaded[0].Text);
             Assert.True(loaded[0].IsPinned);
+            Assert.Equal(created, loaded[0].CreatedAt);
             Assert.False(loaded[1].IsPinned);
         }
 

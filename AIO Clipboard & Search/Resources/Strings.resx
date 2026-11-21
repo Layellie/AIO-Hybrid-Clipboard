@@ -13,25 +13,55 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="HideOnCopy" xml:space="preserve">
-    <value>Automatically hide menu on new selection</value>
+    <value>Automatically hide menu on selection</value>
+  </data>
+  <data name="AutoPaste" xml:space="preserve">
+    <value>Auto-paste into active app on select</value>
   </data>
   <data name="StartWithWindows" xml:space="preserve">
     <value>Start with Windows</value>
   </data>
+  <data name="StartMinimized" xml:space="preserve">
+    <value>Start minimized to system tray</value>
+  </data>
+  <data name="AutoOcr" xml:space="preserve">
+    <value>Run OCR automatically on new captures</value>
+  </data>
+  <data name="QuickPasteEnabled" xml:space="preserve">
+    <value>Enable quick-paste shortcuts (1 / 2 / 3)</value>
+  </data>
+  <data name="HistoryLimit" xml:space="preserve">
+    <value>History limit:</value>
+  </data>
   <data name="ShortcutKey" xml:space="preserve">
-    <value>Shortcut Key: </value>
+    <value>Shortcut Key:</value>
   </data>
   <data name="Language" xml:space="preserve">
-    <value>Language: </value>
+    <value>Language:</value>
   </data>
   <data name="TrayOpen" xml:space="preserve">
     <value>Open</value>
+  </data>
+  <data name="TrayPause" xml:space="preserve">
+    <value>Pause Monitoring</value>
+  </data>
+  <data name="TrayResume" xml:space="preserve">
+    <value>Resume Monitoring</value>
+  </data>
+  <data name="TrayClearUnpinned" xml:space="preserve">
+    <value>Clear Unpinned</value>
+  </data>
+  <data name="TrayOpenCache" xml:space="preserve">
+    <value>Open Cache Folder</value>
+  </data>
+  <data name="TraySettings" xml:space="preserve">
+    <value>Settings</value>
   </data>
   <data name="TrayExit" xml:space="preserve">
     <value>Exit</value>
   </data>
   <data name="InitialMsg" xml:space="preserve">
-    <value>AIO OCR Clipboard Active! Capture images to process... 🚀</value>
+    <value>AIO Hybrid Clipboard is active. Copy text or press Win+Shift+S to capture images with OCR.</value>
   </data>
   <data name="OcrError" xml:space="preserve">
     <value>OCR Error</value>
@@ -42,8 +72,17 @@
   <data name="OcrNoText" xml:space="preserve">
     <value>No readable text found in this image.</value>
   </data>
+  <data name="OcrRunning" xml:space="preserve">
+    <value>Scanning...</value>
+  </data>
+  <data name="OcrReadyBadge" xml:space="preserve">
+    <value>OCR</value>
+  </data>
+  <data name="OcrExtractedLabel" xml:space="preserve">
+    <value>Extracted Text</value>
+  </data>
   <data name="Version" xml:space="preserve">
-    <value>Version: </value>
+    <value>Version:</value>
   </data>
   <data name="CheckUpdates" xml:space="preserve">
     <value>Check for updates</value>
@@ -66,7 +105,253 @@
   <data name="UpdateDownloading" xml:space="preserve">
     <value>Downloading update... The app will restart.</value>
   </data>
+  <data name="UpdateDownloadingProgress" xml:space="preserve">
+    <value>Downloading update... {0:0}%</value>
+  </data>
   <data name="UpdateFailed" xml:space="preserve">
     <value>Update check failed. Please try again later.</value>
+  </data>
+  <data name="SearchPlaceholder" xml:space="preserve">
+    <value>Search clipboard &amp; OCR text...</value>
+  </data>
+  <data name="FilterAll" xml:space="preserve">
+    <value>All</value>
+  </data>
+  <data name="FilterPinned" xml:space="preserve">
+    <value>Pinned</value>
+  </data>
+  <data name="FilterLinks" xml:space="preserve">
+    <value>Links</value>
+  </data>
+  <data name="FilterCode" xml:space="preserve">
+    <value>Code</value>
+  </data>
+  <data name="FilterColors" xml:space="preserve">
+    <value>Colors</value>
+  </data>
+  <data name="SectionTexts" xml:space="preserve">
+    <value>Clipboard</value>
+  </data>
+  <data name="SectionScreenshots" xml:space="preserve">
+    <value>Captures &amp; OCR</value>
+  </data>
+  <data name="EmptyTextsTitle" xml:space="preserve">
+    <value>No clipboard items</value>
+  </data>
+  <data name="EmptyTextsHint" xml:space="preserve">
+    <value>Copy text anywhere or clear your active filter.</value>
+  </data>
+  <data name="EmptyShotsTitle" xml:space="preserve">
+    <value>No captures yet</value>
+  </data>
+  <data name="EmptyShotsHint" xml:space="preserve">
+    <value>Press Win+Shift+S to capture. OCR runs automatically.</value>
+  </data>
+  <data name="OpenCacheFolder" xml:space="preserve">
+    <value>Open Cache Folder</value>
+  </data>
+  <data name="ClearUnpinned" xml:space="preserve">
+    <value>Clear Unpinned</value>
+  </data>
+  <data name="ClearUnpinnedConfirm" xml:space="preserve">
+    <value>Remove all unpinned text and screenshot entries?</value>
+  </data>
+  <data name="ClearUnpinnedTitle" xml:space="preserve">
+    <value>Clear History</value>
+  </data>
+  <data name="HotkeyPressKeys" xml:space="preserve">
+    <value>Press shortcut keys...</value>
+  </data>
+  <data name="HotkeyConflict" xml:space="preserve">
+    <value>Shortcut is already in use by another app.</value>
+  </data>
+  <data name="QuickPasteHint" xml:space="preserve">
+    <value>Quick paste: {0}+1 / {0}+2 / {0}+3</value>
+  </data>
+  <data name="QuickPasteDisabledHint" xml:space="preserve">
+    <value>Quick-paste shortcuts are disabled.</value>
+  </data>
+  <data name="PauseMonitoring" xml:space="preserve">
+    <value>Pause monitoring (Incognito)</value>
+  </data>
+  <data name="ResumeMonitoring" xml:space="preserve">
+    <value>Resume monitoring</value>
+  </data>
+  <data name="PausedBanner" xml:space="preserve">
+    <value>Incognito mode active — new copies are not recorded</value>
+  </data>
+  <data name="PrivacyShieldTip" xml:space="preserve">
+    <value>Password managers &amp; private clipboards are automatically ignored</value>
+  </data>
+  <data name="TooltipEditMode" xml:space="preserve">
+    <value>Multi-select edit mode</value>
+  </data>
+  <data name="TooltipDeleteSelected" xml:space="preserve">
+    <value>Delete selected items (Del)</value>
+  </data>
+  <data name="TooltipClearUnpinned" xml:space="preserve">
+    <value>Clear all unpinned items</value>
+  </data>
+  <data name="TooltipSettings" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="TooltipClearSearch" xml:space="preserve">
+    <value>Clear search</value>
+  </data>
+  <data name="TooltipPin" xml:space="preserve">
+    <value>Pin / Unpin (Right-click or Ctrl+P)</value>
+  </data>
+  <data name="TooltipCopy" xml:space="preserve">
+    <value>Copy to clipboard (Enter)</value>
+  </data>
+  <data name="TooltipOpenUrl" xml:space="preserve">
+    <value>Open link in browser</value>
+  </data>
+  <data name="TooltipDeleteItem" xml:space="preserve">
+    <value>Delete item</value>
+  </data>
+  <data name="TooltipRunOcr" xml:space="preserve">
+    <value>Extract text (OCR)</value>
+  </data>
+  <data name="TooltipCopyOcr" xml:space="preserve">
+    <value>Copy extracted OCR text</value>
+  </data>
+  <data name="TooltipCopyImage" xml:space="preserve">
+    <value>Copy image to clipboard (Shift+Enter)</value>
+  </data>
+  <data name="ToastCopied" xml:space="preserve">
+    <value>Copied to clipboard</value>
+  </data>
+  <data name="ToastImageCopied" xml:space="preserve">
+    <value>Image copied to clipboard</value>
+  </data>
+  <data name="ToastOcrCopied" xml:space="preserve">
+    <value>OCR text extracted &amp; copied</value>
+  </data>
+  <data name="ToastOcrNoText" xml:space="preserve">
+    <value>No readable text detected</value>
+  </data>
+  <data name="ToastPaused" xml:space="preserve">
+    <value>Clipboard monitoring paused</value>
+  </data>
+  <data name="ToastResumed" xml:space="preserve">
+    <value>Clipboard monitoring resumed</value>
+  </data>
+  <data name="ToastCleared" xml:space="preserve">
+    <value>Unpinned history cleared</value>
+  </data>
+  <data name="ToastNothingToClear" xml:space="preserve">
+    <value>No unpinned items to clear</value>
+  </data>
+  <data name="ToastHotkeyConflict" xml:space="preserve">
+    <value>Shortcut conflict — pick another combination</value>
+  </data>
+  <data name="ToastHotkeySaved" xml:space="preserve">
+    <value>Shortcut updated</value>
+  </data>
+  <data name="SettingsTitle" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="FooterShortcutsHint" xml:space="preserve">
+    <value>Enter: Copy · Shift+Enter: Paste · F2: Alias · Ctrl+P: Pin · Del: Delete · Esc: Close</value>
+  </data>
+  <data name="OcrLanguage" xml:space="preserve">
+    <value>OCR Language:</value>
+  </data>
+  <data name="OcrLanguageAuto" xml:space="preserve">
+    <value>Auto (Windows profile)</value>
+  </data>
+  <data name="EncryptSession" xml:space="preserve">
+    <value>Encrypt history on disk (DPAPI)</value>
+  </data>
+  <data name="RetentionLabel" xml:space="preserve">
+    <value>Auto-expire unpinned:</value>
+  </data>
+  <data name="RetentionNever" xml:space="preserve">
+    <value>Never</value>
+  </data>
+  <data name="RetentionDaysFormat" xml:space="preserve">
+    <value>{0} days</value>
+  </data>
+  <data name="ExcludedAppsLabel" xml:space="preserve">
+    <value>Excluded apps (comma-separated .exe):</value>
+  </data>
+  <data name="ExcludedAppsPlaceholder" xml:space="preserve">
+    <value>e.g. KeePassXC.exe, mstsc.exe</value>
+  </data>
+  <data name="MenuPin" xml:space="preserve">
+    <value>Pin / Unpin</value>
+  </data>
+  <data name="MenuSetAlias" xml:space="preserve">
+    <value>Set Alias / Label...</value>
+  </data>
+  <data name="MenuTransform" xml:space="preserve">
+    <value>Transform &amp; Copy</value>
+  </data>
+  <data name="TransformFormatJson" xml:space="preserve">
+    <value>Format JSON (Pretty)</value>
+  </data>
+  <data name="TransformMinifyJson" xml:space="preserve">
+    <value>Minify JSON</value>
+  </data>
+  <data name="TransformSingleLine" xml:space="preserve">
+    <value>Collapse to Single Line</value>
+  </data>
+  <data name="TransformUpper" xml:space="preserve">
+    <value>UPPERCASE</value>
+  </data>
+  <data name="TransformLower" xml:space="preserve">
+    <value>lowercase</value>
+  </data>
+  <data name="TransformTrimLines" xml:space="preserve">
+    <value>Trim Each Line</value>
+  </data>
+  <data name="TransformUrlDecode" xml:space="preserve">
+    <value>URL Decode</value>
+  </data>
+  <data name="TransformUrlEncode" xml:space="preserve">
+    <value>URL Encode</value>
+  </data>
+  <data name="MenuSavePng" xml:space="preserve">
+    <value>Save Image As PNG...</value>
+  </data>
+  <data name="MenuEditOcr" xml:space="preserve">
+    <value>Edit OCR Text &amp; Copy...</value>
+  </data>
+  <data name="AliasDialogTitle" xml:space="preserve">
+    <value>Clip Alias</value>
+  </data>
+  <data name="AliasDialogPrompt" xml:space="preserve">
+    <value>Short searchable label for this clip (leave empty to clear):</value>
+  </data>
+  <data name="EditOcrDialogTitle" xml:space="preserve">
+    <value>Edit Extracted OCR Text</value>
+  </data>
+  <data name="EditOcrDialogPrompt" xml:space="preserve">
+    <value>Review or fix the OCR text (Ctrl+Enter to save &amp; copy):</value>
+  </data>
+  <data name="BtnSave" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="BtnCancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="ToastTransformed" xml:space="preserve">
+    <value>Transformed &amp; copied</value>
+  </data>
+  <data name="ToastInvalidJson" xml:space="preserve">
+    <value>Input is not valid JSON</value>
+  </data>
+  <data name="ToastAliasSaved" xml:space="preserve">
+    <value>Alias updated</value>
+  </data>
+  <data name="ToastPngSaved" xml:space="preserve">
+    <value>Image saved</value>
+  </data>
+  <data name="ToastEncryptionOn" xml:space="preserve">
+    <value>Session encryption enabled (DPAPI)</value>
+  </data>
+  <data name="ToastEncryptionOff" xml:space="preserve">
+    <value>Session encryption disabled</value>
   </data>
 </root>

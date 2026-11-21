@@ -43,8 +43,18 @@ jobs:
           $version = "${{ github.ref_name }}".TrimStart("v")
           iscc "/DMyAppVersion=$version" installer/AIO_Hybrid_Clipboard.iss
 
+      - name: Generate SHA-256 checksums
+        run: |
+          $out = "installer/Output/SHA256SUMS.txt"
+          Get-ChildItem "installer/Output/*.exe" | ForEach-Object {
+            $hash = (Get-FileHash -Path $_.FullName -Algorithm SHA256).Hash
+            "$hash  $($_.Name)"
+          } | Set-Content -Path $out -Encoding ascii
+
       - name: Create GitHub release
         uses: softprops/action-gh-release@v3
         with:
-          files: installer/Output/*.exe
+          files: |
+            installer/Output/*.exe
+            installer/Output/SHA256SUMS.txt
           generate_release_notes: true

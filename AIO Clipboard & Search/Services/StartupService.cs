@@ -9,6 +9,15 @@ namespace AIO_Hybrid_Clipboard.Services
         private const string RunKey    = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
         private const string ValueName = "AIO_ClipboardSearch";
 
+        internal const string MinimizedArg = "--minimized";
+
+        /// <summary>Formats a properly quoted Run registry command line with the minimized flag.</summary>
+        internal static string FormatStartupCommand(string exePath)
+        {
+            string clean = (exePath ?? string.Empty).Trim().Trim('"');
+            return $"\"{clean}\" {MinimizedArg}";
+        }
+
         public static bool IsEnabled()
         {
             try
@@ -25,8 +34,16 @@ namespace AIO_Hybrid_Clipboard.Services
             {
                 using var rk = Registry.CurrentUser.OpenSubKey(RunKey, true);
                 if (rk == null) return;
-                if (enable) rk.SetValue(ValueName, Environment.ProcessPath ?? Assembly.GetExecutingAssembly().Location);
-                else rk.DeleteValue(ValueName, false);
+
+                if (enable)
+                {
+                    string exePath = Environment.ProcessPath ?? Assembly.GetExecutingAssembly().Location;
+                    rk.SetValue(ValueName, FormatStartupCommand(exePath));
+                }
+                else
+                {
+                    rk.DeleteValue(ValueName, false);
+                }
             }
             catch (Exception ex) { Log.Warn($"Startup write failed: {ex.Message}"); }
         }

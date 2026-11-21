@@ -1,4 +1,5 @@
 using AIO_Hybrid_Clipboard.Services;
+using System;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
@@ -16,28 +17,32 @@ namespace AIO_Hybrid_Clipboard.Tests
     public class OcrIntegrationTests
     {
         private static bool EngineAvailable =>
-            File.Exists(Path.Combine(System.AppContext.BaseDirectory, "AIO_SearchEngine.dll"));
+            File.Exists(Path.Combine(AppContext.BaseDirectory, "AIO_SearchEngine.dll"));
 
-        private static (byte[] pixels, int width, int height, int stride) RenderText(string text)
+        private static Bitmap RenderLinesBitmap(string[] lines, int width = 700, int height = 240)
         {
-            const int width = 600, height = 160;
-            using var bitmap = new Bitmap(width, height, PixelFormat.Format32bppPArgb);
+            var bitmap = new Bitmap(width, height, PixelFormat.Format32bppPArgb);
             using (var g = Graphics.FromImage(bitmap))
             {
                 g.Clear(Color.White);
                 g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
-                using var font = new Font("Arial", 36, System.Drawing.FontStyle.Bold);
-                g.DrawString(text, font, Brushes.Black, 20, 40);
+                using var font = new Font("Arial", 32, FontStyle.Bold);
+                for (int i = 0; i < lines.Length; i++)
+                    g.DrawString(lines[i], font, Brushes.Black, 24, 24 + i * 80);
             }
+            return bitmap;
+        }
 
-            var data = bitmap.LockBits(new Rectangle(0, 0, width, height),
+        private static (byte[] pixels, int width, int height, int stride) LockPixels(Bitmap bitmap)
+        {
+            var data = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height),
                                        ImageLockMode.ReadOnly, PixelFormat.Format32bppPArgb);
             try
             {
                 int stride = data.Stride;
-                var pixels = new byte[stride * height];
+                var pixels = new byte[stride * bitmap.Height];
                 Marshal.Copy(data.Scan0, pixels, 0, pixels.Length);
-                return (pixels, width, height, stride);
+                return (pixels, bitmap.Width, bitmap.Height, stride);
             }
             finally
             {
@@ -46,18 +51,70 @@ namespace AIO_Hybrid_Clipboard.Tests
         }
 
         [Fact]
+        public void IsEngineAvailable_DoesNotThrowWhenProbed()
+        {
+            if (!EngineAvailable) return;
+
+            bool available = OcrService.IsEngineAvailable();
+            // On machines with OCR language packs installed, this returns true; on stripped server images, false.
+            Assert.IsType<bool>(available);
+        }
+
+        [Fact]
         public async Task RecognizeAsync_ReadsRenderedText()
         {
-            if (!EngineAvailable) return; // native DLL not built on this machine
+            if (!EngineAvailable) return;
 
-            var (pixels, width, height, stride) = RenderText("HELLO WORLD 123");
+            using var bmp = RenderLinesBitmap(new[] { "HELLO WORLD 123" }, 600, 140);
+            var (pixels, width, height, stride) = LockPixels(bmp);
 
             var (status, result) = await OcrService.RecognizeWithStatusAsync(pixels, width, height, stride);
-            if (status == OcrService.OcrStatus.EngineUnavailable) return; // no OCR language pack (e.g. server CI image)
+            if (status == OcrService.OcrStatus.EngineUnavailable) return;
 
             Assert.Equal(OcrService.OcrStatus.Success, status);
-            Assert.Contains("HELLO", result, System.StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("HELLO", result, StringComparison.OrdinalIgnoreCase);
             Assert.Contains("123",   result);
+        }
+
+        [Fact]
+        public async Task RecognizeAsync_PreservesLineBreaksOnMultiLineText()
+        {
+            if (!EngineAvailable) return;
+
+            using var bmp = RenderLinesBitmap(new[] { "ALPHA ONE 100", "BETA TWO 200" }, 700, 240);
+            var (pixels, width, height, stride) = LockPixels(bmp);
+
+            var (status, result) = await OcrService.RecognizeWithStatusAsync(pixels, width, height, stride);
+            if (status == OcrService.OcrStatus.EngineUnavailable) return;
+
+            Assert.Equal(OcrService.OcrStatus.Success, status);
+            Assert.Contains("ALPHA", result, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("BETA",  result, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("\n",    result);
+        }
+
+        [Fact]
+        public async Task RecognizeImageFileAsync_ReadsFullResolutionPngFromDisk()
+        {
+            if (!EngineAvailable) return;
+
+            string tempPng = Path.Combine(Path.GetTempPath(), $"aio-ocr-test-{Guid.NewGuid():N}.png");
+            try
+            {
+                using (var bmp = RenderLinesBitmap(new[] { "SAVED PHOTO 987" }, 600, 140))
+                    bmp.Save(tempPng, ImageFormat.Png);
+
+                var (status, result) = await OcrService.RecognizeImageFileAsync(tempPng);
+                if (status == OcrService.OcrStatus.EngineUnavailable) return;
+
+                Assert.Equal(OcrService.OcrStatus.Success, status);
+                Assert.Contains("PHOTO", result, StringComparison.OrdinalIgnoreCase);
+                Assert.Contains("987",   result);
+            }
+            finally
+            {
+                if (File.Exists(tempPng)) File.Delete(tempPng);
+            }
         }
 
         [Fact]
@@ -67,13 +124,43 @@ namespace AIO_Hybrid_Clipboard.Tests
 
             const int width = 200, height = 100, stride = width * 4;
             var blank = new byte[height * stride];
-            for (int i = 0; i < blank.Length; i++) blank[i] = 0xFF; // solid white
+            Array.Fill(blank, (byte)0xFF); // solid white
 
             var (status, result) = await OcrService.RecognizeWithStatusAsync(blank, width, height, stride);
             if (status == OcrService.OcrStatus.EngineUnavailable) return;
 
             Assert.Equal(OcrService.OcrStatus.NoText, status);
             Assert.Equal(string.Empty, result);
+        }
+
+        [Fact]
+        public void GetAvailableLanguages_IncludesAutoAndInstalledPacks()
+        {
+            if (!EngineAvailable) return;
+
+            var langs = OcrService.GetAvailableLanguages();
+            Assert.NotEmpty(langs);
+            Assert.Equal(OcrService.AutoLanguageTag, langs[0]);
+        }
+
+        [Fact]
+        public async Task RecognizeAsync_WithExplicitEnUsLanguage_ReadsEnglishITextAccurately()
+        {
+            if (!EngineAvailable) return;
+
+            var langs = OcrService.GetAvailableLanguages();
+            if (!langs.Contains("en-US", StringComparer.OrdinalIgnoreCase)) return;
+
+            using var bmp = RenderLinesBitmap(new[] { "FIRST LINE 100", "DISK FILE 987" }, 700, 240);
+            var (pixels, width, height, stride) = LockPixels(bmp);
+
+            var (status, result) = await OcrService.RecognizeWithStatusAsync(
+                pixels, width, height, stride, languageTag: "en-US");
+            if (status == OcrService.OcrStatus.EngineUnavailable) return;
+
+            Assert.Equal(OcrService.OcrStatus.Success, status);
+            Assert.Contains("FIRST", result, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("DISK",  result, StringComparison.OrdinalIgnoreCase);
         }
 
         [Fact]

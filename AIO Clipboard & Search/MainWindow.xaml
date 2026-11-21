@@ -3,64 +3,56 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:AIO_Hybrid_Clipboard"
         xmlns:conv="clr-namespace:AIO_Hybrid_Clipboard.Converters"
         mc:Ignorable="d"
-        Title="AIO Hybrid Clipboard" SizeToContent="Height" Width="1000" MinHeight="170"
-        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
-        Topmost="True" ShowInTaskbar="False">
+        Title="AIO Hybrid Clipboard"
+        Width="980"
+        Height="560"
+        MinHeight="460"
+        MaxHeight="740"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False"
+        ResizeMode="NoResize"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True">
 
     <Window.Resources>
         <conv:EditSelectionToVisibilityConverter x:Key="EditSelToVis"/>
         <conv:QuickPasteBadgeConverter x:Key="IdxBadge"/>
+        <conv:HexToBrushConverter x:Key="HexToBrush"/>
+        <conv:NonEmptyToVisibilityConverter x:Key="NonEmptyToVis"/>
+        <conv:EnumEqualsConverter x:Key="EnumEquals"/>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
-        <Style TargetType="{x:Type ScrollBar}">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Width" Value="6"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="{x:Type ScrollBar}">
-                        <Grid x:Name="Bg" Background="Transparent" SnapsToDevicePixels="true">
-                            <Track x:Name="PART_Track" IsDirectionReversed="true" IsEnabled="{TemplateBinding IsEnabled}">
-                                <Track.Thumb>
-                                    <Thumb x:Name="Thumb">
-                                        <Thumb.Template>
-                                            <ControlTemplate TargetType="{x:Type Thumb}">
-                                                <Border Background="#D9000000" CornerRadius="3" BorderBrush="#333333" BorderThickness="1"/>
-                                            </ControlTemplate>
-                                        </Thumb.Template>
-                                    </Thumb>
-                                </Track.Thumb>
-                            </Track>
-                        </Grid>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
 
-        <Style TargetType="{x:Type ListBox}">
-            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto"/>
-            <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Disabled"/>
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="5"/>
-        </Style>
-
-        <Style TargetType="{x:Type ListBoxItem}">
+        <!-- Text ListBoxItem Style -->
+        <Style x:Key="TextCardItemStyle" TargetType="{x:Type ListBoxItem}">
             <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="0,0,0,6"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="{x:Type ListBoxItem}">
                         <Grid>
-                            <Border x:Name="Bd" Background="Transparent" BorderBrush="Transparent" BorderThickness="2" CornerRadius="11" Padding="0">
+                            <Border x:Name="Bd"
+                                    Background="{StaticResource CardBgBrush}"
+                                    BorderBrush="{StaticResource BorderSubtleBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="10"
+                                    SnapsToDevicePixels="True">
                                 <ContentPresenter/>
                             </Border>
-                            <!-- Edit-mode selection checkmark, top-right corner -->
-                            <Border Width="22" Height="22" CornerRadius="11"
-                                    Background="#5865F2" BorderBrush="White" BorderThickness="1.5"
-                                    HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,2,6,2"
+
+                            <!-- Edit-mode selection checkmark -->
+                            <Border Width="20" Height="20" CornerRadius="10"
+                                    Background="{StaticResource AccentBrush}"
+                                    BorderBrush="White" BorderThickness="1.5"
+                                    HorizontalAlignment="Right" VerticalAlignment="Top"
+                                    Margin="0,6,8,0"
                                     IsHitTestVisible="False">
                                 <Border.Visibility>
                                     <MultiBinding Converter="{StaticResource EditSelToVis}">
@@ -68,14 +60,18 @@
                                         <Binding Path="SelectionMode" RelativeSource="{RelativeSource AncestorType={x:Type ListBox}}"/>
                                     </MultiBinding>
                                 </Border.Visibility>
-                                <TextBlock Text="✓" Foreground="White" FontSize="13" FontWeight="Bold"
-                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <Path Data="{StaticResource IconCheck}" Fill="White" Width="11" Height="11" Stretch="Uniform"
+                                      HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
                         </Grid>
                         <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource CardHoverBgBrush}"/>
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource BorderHoverBrush}"/>
+                            </Trigger>
                             <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="Bd" Property="BorderBrush" Value="#5865F2"/>
-                                <Setter TargetName="Bd" Property="Background" Value="#225865F2"/>
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource CardSelectedBgBrush}"/>
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -83,36 +79,51 @@
             </Setter>
         </Style>
 
-        <Style x:Key="TrayContextMenuStyle" TargetType="{x:Type ContextMenu}">
-            <Setter Property="Background" Value="#F218191C"/>
-            <Setter Property="BorderBrush" Value="#2F3136"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Width" Value="150"/>
+        <!-- Screenshot Grid ListBoxItem Style -->
+        <Style x:Key="ShotCardItemStyle" TargetType="{x:Type ListBoxItem}">
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="4"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
             <Setter Property="Template">
                 <Setter.Value>
-                    <ControlTemplate TargetType="{x:Type ContextMenu}">
-                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="8">
-                            <StackPanel IsItemsHost="True" Margin="0,5,0,5"/>
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
+                    <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                        <Grid>
+                            <Border x:Name="Bd"
+                                    Background="{StaticResource CardBgBrush}"
+                                    BorderBrush="{StaticResource BorderSubtleBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="10"
+                                    ClipToBounds="True"
+                                    SnapsToDevicePixels="True">
+                                <ContentPresenter/>
+                            </Border>
 
-        <Style x:Key="TrayMenuItemStyle" TargetType="{x:Type MenuItem}">
-            <Setter Property="Foreground" Value="#B9BBBE"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="Padding" Value="18,8,18,8"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="{x:Type MenuItem}">
-                        <Border x:Name="ItemContainer" CornerRadius="5" Margin="5,1,5,1" Background="Transparent" SnapsToDevicePixels="True">
-                            <ContentPresenter ContentSource="Header" Margin="{TemplateBinding Padding}" HorizontalAlignment="Left" VerticalAlignment="Center"/>
-                        </Border>
+                            <!-- Edit-mode selection checkmark -->
+                            <Border Width="20" Height="20" CornerRadius="10"
+                                    Background="{StaticResource AccentBrush}"
+                                    BorderBrush="White" BorderThickness="1.5"
+                                    HorizontalAlignment="Right" VerticalAlignment="Top"
+                                    Margin="0,6,6,0"
+                                    IsHitTestVisible="False">
+                                <Border.Visibility>
+                                    <MultiBinding Converter="{StaticResource EditSelToVis}">
+                                        <Binding Path="IsSelected"    RelativeSource="{RelativeSource AncestorType={x:Type ListBoxItem}}"/>
+                                        <Binding Path="SelectionMode" RelativeSource="{RelativeSource AncestorType={x:Type ListBox}}"/>
+                                    </MultiBinding>
+                                </Border.Visibility>
+                                <Path Data="{StaticResource IconCheck}" Fill="White" Width="11" Height="11" Stretch="Uniform"
+                                      HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="ItemContainer" Property="Background" Value="#4F545C"/>
-                                <Setter Property="Foreground" Value="White"/>
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource BorderHoverBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+                                <Setter TargetName="Bd" Property="BorderThickness" Value="2"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -120,224 +131,1006 @@
             </Setter>
         </Style>
 
-        <ContextMenu x:Key="DiscordTrayMenu" Style="{StaticResource TrayContextMenuStyle}">
+        <!-- Rich Tray ContextMenu -->
+        <ContextMenu x:Key="TrayContextMenu" Style="{StaticResource TrayContextMenuStyle}">
             <MenuItem Header="{Binding Loc[TrayOpen]}" Style="{StaticResource TrayMenuItemStyle}" Click="TrayMenu_Open_Click"/>
-            <MenuItem Header="{Binding Loc[TrayExit]}" Style="{StaticResource TrayMenuItemStyle}" Click="TrayMenu_Close_Click"/>
+            <MenuItem Header="{Binding PauseMenuLabel}" Style="{StaticResource TrayMenuItemStyle}" Command="{Binding TogglePauseCommand}"/>
+            <MenuItem Header="{Binding Loc[TrayClearUnpinned]}" Style="{StaticResource TrayMenuItemStyle}" Command="{Binding ClearUnpinnedCommand}"/>
+            <MenuItem Header="{Binding Loc[TrayOpenCache]}" Style="{StaticResource TrayMenuItemStyle}" Command="{Binding OpenCacheFolderCommand}"/>
+            <MenuItem Header="{Binding Loc[TraySettings]}" Style="{StaticResource TrayMenuItemStyle}" Click="TrayMenu_Settings_Click"/>
+            <Separator Style="{StaticResource TraySeparatorStyle}"/>
+            <MenuItem Header="{Binding Loc[TrayExit]}" Style="{StaticResource TrayDangerMenuItemStyle}" Click="TrayMenu_Close_Click"/>
+        </ContextMenu>
+
+        <!-- Text Clip Context Menu (Pin, Alias, Transforms, Delete) -->
+        <ContextMenu x:Key="TextItemContextMenu" Style="{StaticResource TrayContextMenuStyle}">
+            <MenuItem Header="{Binding Loc[MenuPin]}" Style="{StaticResource TrayMenuItemStyle}" Click="TextMenu_Pin_Click"/>
+            <MenuItem Header="{Binding Loc[MenuSetAlias]}" Style="{StaticResource TrayMenuItemStyle}" Click="TextMenu_Alias_Click"/>
+            <MenuItem Header="{Binding Loc[MenuTransform]}" Style="{StaticResource TraySubMenuItemStyle}">
+                <MenuItem Header="{Binding Loc[TransformFormatJson]}" Style="{StaticResource TrayMenuItemStyle}" Tag="FormatJson" Click="TextMenu_Transform_Click"/>
+                <MenuItem Header="{Binding Loc[TransformMinifyJson]}" Style="{StaticResource TrayMenuItemStyle}" Tag="MinifyJson" Click="TextMenu_Transform_Click"/>
+                <Separator Style="{StaticResource TraySeparatorStyle}"/>
+                <MenuItem Header="{Binding Loc[TransformSingleLine]}" Style="{StaticResource TrayMenuItemStyle}" Tag="SingleLine" Click="TextMenu_Transform_Click"/>
+                <MenuItem Header="{Binding Loc[TransformTrimLines]}" Style="{StaticResource TrayMenuItemStyle}" Tag="TrimLines" Click="TextMenu_Transform_Click"/>
+                <MenuItem Header="{Binding Loc[TransformUpper]}" Style="{StaticResource TrayMenuItemStyle}" Tag="UpperCase" Click="TextMenu_Transform_Click"/>
+                <MenuItem Header="{Binding Loc[TransformLower]}" Style="{StaticResource TrayMenuItemStyle}" Tag="LowerCase" Click="TextMenu_Transform_Click"/>
+                <Separator Style="{StaticResource TraySeparatorStyle}"/>
+                <MenuItem Header="{Binding Loc[TransformUrlDecode]}" Style="{StaticResource TrayMenuItemStyle}" Tag="UrlDecode" Click="TextMenu_Transform_Click"/>
+                <MenuItem Header="{Binding Loc[TransformUrlEncode]}" Style="{StaticResource TrayMenuItemStyle}" Tag="UrlEncode" Click="TextMenu_Transform_Click"/>
+            </MenuItem>
+            <Separator Style="{StaticResource TraySeparatorStyle}"/>
+            <MenuItem Header="{Binding Loc[TooltipDeleteItem]}" Style="{StaticResource TrayDangerMenuItemStyle}" Click="TextMenu_Delete_Click"/>
+        </ContextMenu>
+
+        <!-- Screenshot Context Menu (Pin, OCR, Edit OCR, Copy Image, Save As PNG, Delete) -->
+        <ContextMenu x:Key="ShotItemContextMenu" Style="{StaticResource TrayContextMenuStyle}">
+            <MenuItem Header="{Binding Loc[MenuPin]}" Style="{StaticResource TrayMenuItemStyle}" Click="ShotMenu_Pin_Click"/>
+            <MenuItem Header="{Binding Loc[TooltipRunOcr]}" Style="{StaticResource TrayMenuItemStyle}" Click="ShotMenu_RunOcr_Click"/>
+            <MenuItem Header="{Binding Loc[MenuEditOcr]}" Style="{StaticResource TrayMenuItemStyle}" Click="ShotMenu_EditOcr_Click"/>
+            <MenuItem Header="{Binding Loc[TooltipCopyImage]}" Style="{StaticResource TrayMenuItemStyle}" Click="ShotMenu_CopyImage_Click"/>
+            <MenuItem Header="{Binding Loc[MenuSavePng]}" Style="{StaticResource TrayMenuItemStyle}" Click="ShotMenu_SavePng_Click"/>
+            <Separator Style="{StaticResource TraySeparatorStyle}"/>
+            <MenuItem Header="{Binding Loc[TooltipDeleteItem]}" Style="{StaticResource TrayDangerMenuItemStyle}" Click="ShotMenu_Delete_Click"/>
         </ContextMenu>
     </Window.Resources>
 
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="55"/>
-            <RowDefinition Height="105"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
+    <!-- Outer Shadow Padding -->
+    <Grid Margin="14">
+        <Border Background="{StaticResource WindowBgBrush}"
+                BorderBrush="#FF343A49"
+                BorderThickness="1"
+                CornerRadius="14"
+                SnapsToDevicePixels="True">
+            <Border.Effect>
+                <DropShadowEffect Color="Black" BlurRadius="22" ShadowDepth="5" Opacity="0.52"/>
+            </Border.Effect>
 
-        <Grid Grid.Row="0" Margin="10,5,10,0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="45"/>
-                <ColumnDefinition Width="42"/>
-                <ColumnDefinition Width="45"/>
-            </Grid.ColumnDefinitions>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
 
-            <Border Grid.Column="0" Background="#D92D2D2D" CornerRadius="15" Margin="4" BorderBrush="#444444" BorderThickness="1">
-                <TextBox Name="TxtSearch" Background="Transparent" Foreground="White"
-                         BorderThickness="0" FontSize="16" Padding="12,8,12,8"
-                         CaretBrush="White" VerticalAlignment="Center"
-                         Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}"
-                         PreviewKeyDown="TxtSearch_PreviewKeyDown"/>
-            </Border>
+                <!-- ==================== ROW 0: HEADER / SEARCH & ACTIONS ==================== -->
+                <Grid Grid.Row="0" Margin="14,12,14,8" MouseLeftButtonDown="HeaderBar_MouseLeftButtonDown" Background="Transparent">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
 
-            <CheckBox Grid.Column="1" Name="ChkEdit" Margin="4"
-                      IsChecked="{Binding IsEditMode}"
-                      Checked="ChkEdit_Checked" Unchecked="ChkEdit_Unchecked"
-                      ToolTip="Toggle edit mode for multi-select"
-                      VerticalAlignment="Stretch">
-                <CheckBox.Template>
-                    <ControlTemplate TargetType="CheckBox">
-                        <Border x:Name="Bd" Background="#D92D2D2D" CornerRadius="12"
-                                BorderBrush="#444444" BorderThickness="1" Cursor="Hand">
-                            <TextBlock Text="✏" FontSize="17" Foreground="White"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="#CC5865F2"/>
-                                <Setter TargetName="Bd" Property="BorderBrush" Value="#7289DA"/>
-                            </Trigger>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="BorderBrush" Value="#7289DA"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </CheckBox.Template>
-            </CheckBox>
+                    <!-- Search Box -->
+                    <Border Grid.Column="0"
+                            Background="{StaticResource ControlBgBrush}"
+                            BorderBrush="{StaticResource BorderSubtleBrush}"
+                            BorderThickness="1"
+                            CornerRadius="10"
+                            Height="38"
+                            Margin="0,0,10,0">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="36"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
 
-            <Button Grid.Column="2" Name="BtnDelete" Click="BtnDelete_Click" Margin="4"
-                    Background="#D92D2D2D" BorderBrush="#444444" BorderThickness="1" Foreground="White"
-                    ToolTip="Delete selected items">
-                <Button.Resources>
-                    <Style TargetType="Border">
-                        <Setter Property="CornerRadius" Value="12"/>
-                    </Style>
-                </Button.Resources>
-                <TextBlock Text="🗑" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-            </Button>
+                            <Path Grid.Column="0"
+                                  Data="{StaticResource IconSearch}"
+                                  Fill="{StaticResource TextMutedBrush}"
+                                  Width="16" Height="16" Stretch="Uniform"
+                                  HorizontalAlignment="Center" VerticalAlignment="Center"
+                                  IsHitTestVisible="False"/>
 
-            <Button Grid.Column="3" Name="BtnSettings" Click="BtnSettings_Click" Margin="4" Background="#D92D2D2D" BorderBrush="#444444" BorderThickness="1" Foreground="White"
-                    ToolTip="Open settings">
-                <Button.Resources>
-                    <Style TargetType="Border">
-                        <Setter Property="CornerRadius" Value="15"/>
-                    </Style>
-                </Button.Resources>
-                <TextBlock Text="⚙" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-            </Button>
-        </Grid>
+                            <!-- Search Placeholder -->
+                            <TextBlock Grid.Column="1"
+                                       Text="{Binding Loc[SearchPlaceholder]}"
+                                       Foreground="{StaticResource TextMutedBrush}"
+                                       FontSize="13.5"
+                                       VerticalAlignment="Center"
+                                       IsHitTestVisible="False"
+                                       Visibility="{Binding HasSearchQuery, Converter={StaticResource NonEmptyToVis}, ConverterParameter=invert}"/>
 
-        <Grid Grid.Row="1" Margin="10,0,10,0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
+                            <TextBox Grid.Column="1"
+                                     x:Name="TxtSearch"
+                                     Background="Transparent"
+                                     Foreground="{StaticResource TextPrimaryBrush}"
+                                     CaretBrush="{StaticResource AccentHoverBrush}"
+                                     SelectionBrush="{StaticResource AccentBrush}"
+                                     BorderThickness="0"
+                                     FontSize="13.5"
+                                     VerticalContentAlignment="Center"
+                                     Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}"
+                                     PreviewKeyDown="TxtSearch_PreviewKeyDown"/>
 
-            <Border Grid.Column="0" Background="#D9252525" CornerRadius="15" Margin="4" BorderBrush="#444444" BorderThickness="1">
-                <ListBox Name="LstResults" ItemsSource="{Binding TextsView}"
-                         PreviewMouseWheel="ListBox_PreviewMouseWheel" AlternationCount="15">
-                    <ListBox.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <StackPanel Orientation="Horizontal"/>
-                        </ItemsPanelTemplate>
-                    </ListBox.ItemsPanel>
-                    <ListBox.ItemTemplate>
-                        <DataTemplate>
-                            <Grid Margin="4,0,4,0">
-                                <Border Background="#D9333333" CornerRadius="10" Padding="12,8,12,8" BorderBrush="#555555" BorderThickness="1"
-                                        PreviewMouseLeftButtonDown="ResultItem_PreviewMouseLeftButtonDown"
-                                        MouseRightButtonUp="ResultItem_TogglePin" Cursor="Hand">
-
-                                    <TextBlock Text="{Binding Text}" Foreground="#E0E0E0" MaxWidth="180" TextTrimming="CharacterEllipsis"
-                                               ToolTipService.InitialShowDelay="50"
-                                               ToolTipService.BetweenShowDelay="0"
-                                               ToolTipService.ShowDuration="60000">
-                                        <TextBlock.ToolTip>
-                                            <ToolTip Background="Transparent" BorderThickness="0" Padding="0">
-                                                <Border Background="#F218191C" CornerRadius="8" BorderBrush="#2F3136" BorderThickness="1" Padding="12,10">
-                                                    <TextBlock Text="{Binding Text}" Foreground="White" TextWrapping="Wrap" MaxWidth="400" FontSize="13"/>
-                                                </Border>
-                                            </ToolTip>
-                                        </TextBlock.ToolTip>
-                                    </TextBlock>
-                                </Border>
-
-                                <!-- Quick-paste number badge (Alt+1/2/3), first three items only -->
-                                <Border Width="17" Height="17" CornerRadius="8.5" Background="#CC5865F2"
-                                        HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="2,0,0,-2"
-                                        IsHitTestVisible="False"
-                                        Visibility="{Binding (ItemsControl.AlternationIndex), RelativeSource={RelativeSource AncestorType={x:Type ListBoxItem}}, Converter={StaticResource IdxBadge}, ConverterParameter=vis}">
-                                    <TextBlock Foreground="White" FontSize="10" FontWeight="Bold"
-                                               HorizontalAlignment="Center" VerticalAlignment="Center"
-                                               Text="{Binding (ItemsControl.AlternationIndex), RelativeSource={RelativeSource AncestorType={x:Type ListBoxItem}}, Converter={StaticResource IdxBadge}}"/>
-                                </Border>
-
-                                <!-- Pin indicator (bottom-right to avoid the edit-mode check badge) -->
-                                <TextBlock Text="📌" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,2,-2"
-                                           IsHitTestVisible="False"
-                                           Visibility="{Binding IsPinned, Converter={StaticResource BoolToVis}}"/>
-                            </Grid>
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
-            </Border>
-
-            <Border Grid.Column="1" Background="#D9252525" CornerRadius="15" Margin="4" BorderBrush="#444444" BorderThickness="1">
-                <ListBox Name="LstScreenshots" ItemsSource="{Binding ScreenshotsView}"
-                         PreviewMouseWheel="ListBox_PreviewMouseWheel">
-                    <ListBox.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <StackPanel Orientation="Horizontal"/>
-                        </ItemsPanelTemplate>
-                    </ListBox.ItemsPanel>
-                    <ListBox.ItemTemplate>
-                        <DataTemplate>
-                            <Border BorderBrush="#555555" BorderThickness="1" CornerRadius="8" Margin="4,0,4,0" Background="#111111" ClipToBounds="True" Padding="1"
-                                    PreviewMouseLeftButtonDown="Screenshot_PreviewMouseLeftButtonDown"
-                                    PreviewMouseMove="Screenshot_PreviewMouseMove"
-                                    PreviewMouseLeftButtonUp="Screenshot_PreviewMouseLeftButtonUp"
-                                    MouseRightButtonUp="Screenshot_TogglePin"
-                                    Cursor="Hand"
-                                    ToolTipService.InitialShowDelay="350" ToolTipService.ShowDuration="60000">
-                                <Border.ToolTip>
-                                    <ToolTip Background="Transparent" BorderThickness="0" Padding="0">
-                                        <Border Background="#F218191C" CornerRadius="10" BorderBrush="#2F3136" BorderThickness="1" Padding="6">
-                                            <StackPanel>
-                                                <Image Source="{Binding Image}" MaxWidth="480" MaxHeight="340" Stretch="Uniform"/>
-                                                <TextBlock Text="{Binding Name}" Foreground="#B9BBBE" FontSize="11"
-                                                           HorizontalAlignment="Center" Margin="0,6,0,0"/>
-                                            </StackPanel>
+                            <!-- Clear Search Button -->
+                            <Button Grid.Column="2"
+                                    Command="{Binding ClearSearchCommand}"
+                                    ToolTip="{Binding Loc[TooltipClearSearch]}"
+                                    Visibility="{Binding HasSearchQuery, Converter={StaticResource BoolToVis}}"
+                                    Width="26" Height="26" Margin="0,0,6,0"
+                                    Background="Transparent" BorderThickness="0" Cursor="Hand" FocusVisualStyle="{x:Null}">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border x:Name="Bd" Background="Transparent" CornerRadius="6">
+                                            <Path Data="{StaticResource IconClose}" Fill="{StaticResource TextSecondaryBrush}"
+                                                  Width="12" Height="12" Stretch="Uniform"
+                                                  HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                         </Border>
-                                    </ToolTip>
-                                </Border.ToolTip>
-                                <Grid>
-                                    <Image Source="{Binding Image}" Width="110" Height="65" Stretch="UniformToFill"/>
-                                    <!-- Pin indicator -->
-                                    <Border Background="#B2000000" CornerRadius="9" Width="18" Height="18"
-                                            HorizontalAlignment="Left" VerticalAlignment="Top" Margin="2"
-                                            IsHitTestVisible="False"
-                                            Visibility="{Binding IsPinned, Converter={StaticResource BoolToVis}}">
-                                        <TextBlock Text="📌" FontSize="10" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource ControlHoverBrush}"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
+                        </Grid>
+                    </Border>
+
+                    <!-- Action Buttons -->
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                        <!-- Incognito / Pause Toggle -->
+                        <CheckBox x:Name="ChkPause"
+                                  IsChecked="{Binding IsPaused}"
+                                  ToolTip="{Binding PauseTooltip}"
+                                  Margin="0,0,6,0"
+                                  Width="34" Height="34" Cursor="Hand" FocusVisualStyle="{x:Null}">
+                            <CheckBox.Template>
+                                <ControlTemplate TargetType="CheckBox">
+                                    <Border x:Name="Bd"
+                                            Background="{StaticResource ControlBgBrush}"
+                                            BorderBrush="{StaticResource BorderSubtleBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="8">
+                                        <Path x:Name="IconPath"
+                                              Data="{StaticResource IconPause}"
+                                              Fill="{StaticResource TextSecondaryBrush}"
+                                              Width="14" Height="14" Stretch="Uniform"
+                                              HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource ControlHoverBrush}"/>
+                                            <Setter TargetName="IconPath" Property="Fill" Value="{StaticResource TextPrimaryBrush}"/>
+                                        </Trigger>
+                                        <Trigger Property="IsChecked" Value="True">
+                                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource WarningSoftBrush}"/>
+                                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource WarningBrush}"/>
+                                            <Setter TargetName="IconPath" Property="Data" Value="{StaticResource IconPlay}"/>
+                                            <Setter TargetName="IconPath" Property="Fill" Value="{StaticResource WarningBrush}"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </CheckBox.Template>
+                        </CheckBox>
+
+                        <!-- Multi-Select Edit Mode -->
+                        <CheckBox x:Name="ChkEdit"
+                                  Style="{StaticResource IconToggleButtonStyle}"
+                                  IsChecked="{Binding IsEditMode}"
+                                  Checked="ChkEdit_Checked"
+                                  Unchecked="ChkEdit_Unchecked"
+                                  ToolTip="{Binding Loc[TooltipEditMode]}"
+                                  Margin="0,0,6,0">
+                            <Path Data="{StaticResource IconEdit}"
+                                  Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=CheckBox}}"
+                                  Width="15" Height="15" Stretch="Uniform"/>
+                        </CheckBox>
+
+                        <!-- Delete Selected -->
+                        <Button x:Name="BtnDelete"
+                                Style="{StaticResource IconButtonStyle}"
+                                Click="BtnDelete_Click"
+                                ToolTip="{Binding Loc[TooltipDeleteSelected]}"
+                                Margin="0,0,6,0">
+                            <Path Data="{StaticResource IconTrash}"
+                                  Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                  Width="15" Height="15" Stretch="Uniform"/>
+                        </Button>
+
+                        <!-- Clear Unpinned -->
+                        <Button x:Name="BtnClearUnpinned"
+                                Style="{StaticResource IconButtonStyle}"
+                                Command="{Binding ClearUnpinnedCommand}"
+                                ToolTip="{Binding Loc[TooltipClearUnpinned]}"
+                                Margin="0,0,6,0">
+                            <Path Data="{StaticResource IconBroom}"
+                                  Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                  Width="15" Height="15" Stretch="Uniform"/>
+                        </Button>
+
+                        <!-- Settings Drawer Toggle -->
+                        <Button x:Name="BtnSettings"
+                                Style="{StaticResource IconButtonStyle}"
+                                Click="BtnSettings_Click"
+                                ToolTip="{Binding Loc[TooltipSettings]}">
+                            <Path Data="{StaticResource IconSettings}"
+                                  Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                  Width="16" Height="16" Stretch="Uniform"/>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+
+                <!-- ==================== ROW 1: CATEGORY FILTER PILLS & STATUS ==================== -->
+                <Grid Grid.Row="1" Margin="14,0,14,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                        <RadioButton GroupName="ClipCategory" Style="{StaticResource PillRadioButtonStyle}"
+                                     Content="{Binding Loc[FilterAll]}"
+                                     IsChecked="{Binding SelectedCategory, Converter={StaticResource EnumEquals}, ConverterParameter=All}"/>
+                        <RadioButton GroupName="ClipCategory" Style="{StaticResource PillRadioButtonStyle}"
+                                     Content="{Binding Loc[FilterPinned]}"
+                                     IsChecked="{Binding SelectedCategory, Converter={StaticResource EnumEquals}, ConverterParameter=Pinned}"/>
+                        <RadioButton GroupName="ClipCategory" Style="{StaticResource PillRadioButtonStyle}"
+                                     Content="{Binding Loc[FilterLinks]}"
+                                     IsChecked="{Binding SelectedCategory, Converter={StaticResource EnumEquals}, ConverterParameter=Links}"/>
+                        <RadioButton GroupName="ClipCategory" Style="{StaticResource PillRadioButtonStyle}"
+                                     Content="{Binding Loc[FilterCode]}"
+                                     IsChecked="{Binding SelectedCategory, Converter={StaticResource EnumEquals}, ConverterParameter=Code}"/>
+                        <RadioButton GroupName="ClipCategory" Style="{StaticResource PillRadioButtonStyle}"
+                                     Content="{Binding Loc[FilterColors]}"
+                                     IsChecked="{Binding SelectedCategory, Converter={StaticResource EnumEquals}, ConverterParameter=Colors}"/>
+                    </StackPanel>
+
+                    <!-- Privacy Shield Indicator -->
+                    <Border Grid.Column="1"
+                            Background="{StaticResource SurfaceBgBrush}"
+                            BorderBrush="{StaticResource BorderSubtleBrush}"
+                            BorderThickness="1"
+                            CornerRadius="10"
+                            Padding="8,3"
+                            VerticalAlignment="Center"
+                            ToolTip="{Binding Loc[PrivacyShieldTip]}">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Path Data="{StaticResource IconShield}" Fill="{StaticResource SuccessBrush}"
+                                  Width="12" Height="12" Stretch="Uniform" Margin="0,0,5,0"/>
+                            <TextBlock Text="{Binding VersionText}" Foreground="{StaticResource TextMutedBrush}" FontSize="11"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- ==================== ROW 2: PAUSED / INCOGNITO BANNER ==================== -->
+                <Border Grid.Row="2"
+                        Margin="14,0,14,8"
+                        Padding="10,6"
+                        CornerRadius="8"
+                        Background="{StaticResource WarningSoftBrush}"
+                        BorderBrush="{StaticResource WarningBrush}"
+                        BorderThickness="1"
+                        Visibility="{Binding IsPaused, Converter={StaticResource BoolToVis}}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Path Grid.Column="0" Data="{StaticResource IconPause}" Fill="{StaticResource WarningBrush}"
+                              Width="13" Height="13" Stretch="Uniform" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <TextBlock Grid.Column="1" Text="{Binding Loc[PausedBanner]}"
+                                   Foreground="{StaticResource TextPrimaryBrush}" FontSize="12" VerticalAlignment="Center"/>
+                        <Button Grid.Column="2" Content="{Binding Loc[TrayResume]}"
+                                Command="{Binding TogglePauseCommand}"
+                                Style="{StaticResource SecondaryButtonStyle}"
+                                Padding="8,2" FontSize="11"/>
+                    </Grid>
+                </Border>
+
+                <!-- ==================== ROW 3: 2-COLUMN CONTENT AREA ==================== -->
+                <Grid Grid.Row="3" Margin="14,0,14,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1.32*"/>
+                        <ColumnDefinition Width="10"/>
+                        <ColumnDefinition Width="1*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- LEFT COLUMN: VERTICAL VIRTUALIZED TEXT CLIPS -->
+                    <Border Grid.Column="0"
+                            Background="{StaticResource SurfaceBgBrush}"
+                            BorderBrush="{StaticResource BorderSubtleBrush}"
+                            BorderThickness="1"
+                            CornerRadius="12"
+                            Padding="8,8,6,6">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <!-- Section Header -->
+                            <Grid Grid.Row="0" Margin="4,0,6,8">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Path Data="{StaticResource IconClipboard}" Fill="{StaticResource AccentHoverBrush}"
+                                          Width="13" Height="13" Stretch="Uniform" Margin="0,0,6,0"/>
+                                    <TextBlock Text="{Binding Loc[SectionTexts]}"
+                                               Foreground="{StaticResource TextSecondaryBrush}"
+                                               FontSize="12" FontWeight="SemiBold"/>
+                                </StackPanel>
+                                <Border HorizontalAlignment="Right" Background="{StaticResource ControlBgBrush}"
+                                        CornerRadius="8" Padding="7,1">
+                                    <TextBlock Text="{Binding VisibleTextsCount}"
+                                               Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" FontWeight="SemiBold"/>
+                                </Border>
+                            </Grid>
+
+                            <!-- Virtualized Text List -->
+                            <ListBox Grid.Row="1"
+                                     x:Name="LstResults"
+                                     ItemsSource="{Binding TextsView}"
+                                     ItemContainerStyle="{StaticResource TextCardItemStyle}"
+                                     Background="Transparent"
+                                     BorderThickness="0"
+                                     AlternationCount="200"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                     ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                     ScrollViewer.CanContentScroll="True"
+                                     VirtualizingPanel.IsVirtualizing="True"
+                                     VirtualizingPanel.VirtualizationMode="Recycling"
+                                     PreviewKeyDown="ListBox_PreviewKeyDown">
+                                <ListBox.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <VirtualizingStackPanel Orientation="Vertical"/>
+                                    </ItemsPanelTemplate>
+                                </ListBox.ItemsPanel>
+
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid x:Name="CardRoot"
+                                              Background="Transparent"
+                                              Cursor="Hand"
+                                              PreviewMouseLeftButtonDown="ResultItem_PreviewMouseLeftButtonDown"
+                                              MouseRightButtonUp="ResultItem_TogglePin"
+                                              ToolTipService.InitialShowDelay="450"
+                                              ToolTipService.ShowDuration="60000">
+                                            <Grid.ToolTip>
+                                                <ToolTip Background="Transparent" BorderThickness="0" Padding="0">
+                                                    <Border Background="#FA171A21" CornerRadius="10"
+                                                            BorderBrush="#FF3A4152" BorderThickness="1" Padding="12,10">
+                                                        <TextBlock Text="{Binding TooltipText}" Foreground="{StaticResource TextPrimaryBrush}"
+                                                                   TextWrapping="Wrap" MaxWidth="440" MaxHeight="320"
+                                                                   TextTrimming="CharacterEllipsis" FontSize="12.5"/>
+                                                    </Border>
+                                                </ToolTip>
+                                            </Grid.ToolTip>
+
+                                            <Grid Margin="10,8,10,7">
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                </Grid.RowDefinitions>
+
+                                                <!-- Content Row -->
+                                                <Grid Grid.Row="0">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+
+                                                    <!-- Quick-Paste 1/2/3 Badge -->
+                                                    <Grid Grid.Column="0" VerticalAlignment="Top" Margin="0,1,7,0"
+                                                          Visibility="{Binding DataContext.QuickPasteEnabled, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}">
+                                                        <Border Width="18" Height="18" CornerRadius="5"
+                                                                Background="{StaticResource AccentSoftBrush}"
+                                                                BorderBrush="{StaticResource AccentBrush}"
+                                                                BorderThickness="1"
+                                                                IsHitTestVisible="False"
+                                                                Visibility="{Binding (ItemsControl.AlternationIndex), RelativeSource={RelativeSource AncestorType={x:Type ListBoxItem}}, Converter={StaticResource IdxBadge}, ConverterParameter=vis}">
+                                                            <TextBlock Foreground="{StaticResource TextPrimaryBrush}"
+                                                                       FontSize="10" FontWeight="Bold"
+                                                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                                       Text="{Binding (ItemsControl.AlternationIndex), RelativeSource={RelativeSource AncestorType={x:Type ListBoxItem}}, Converter={StaticResource IdxBadge}}"/>
+                                                        </Border>
+                                                    </Grid>
+
+                                                    <!-- Color Swatch (only when ClipKind.Color) -->
+                                                    <Border Grid.Column="1"
+                                                            Width="18" Height="18" CornerRadius="5"
+                                                            Margin="0,1,7,0" VerticalAlignment="Top"
+                                                            Background="{Binding ColorHex, Converter={StaticResource HexToBrush}}"
+                                                            BorderBrush="#66FFFFFF" BorderThickness="1"
+                                                            Visibility="{Binding IsColor, Converter={StaticResource BoolToVis}}"/>
+
+                                                    <!-- Main Preview Text -->
+                                                    <TextBlock Grid.Column="2"
+                                                               Text="{Binding PreviewText}"
+                                                               Foreground="{StaticResource TextPrimaryBrush}"
+                                                               FontSize="13"
+                                                               LineHeight="18"
+                                                               MaxHeight="36"
+                                                               TextWrapping="Wrap"
+                                                               TextTrimming="CharacterEllipsis"/>
+
+                                                    <!-- Hover Action Buttons -->
+                                                    <StackPanel x:Name="HoverActions"
+                                                                Grid.Column="3"
+                                                                Orientation="Horizontal"
+                                                                VerticalAlignment="Top"
+                                                                Margin="8,0,0,0"
+                                                                Opacity="0">
+                                                        <!-- Open URL (visible only for URL clips) -->
+                                                        <Button Style="{StaticResource CardActionButtonStyle}"
+                                                                Command="{Binding DataContext.OpenUrlCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                CommandParameter="{Binding}"
+                                                                ToolTip="{Binding DataContext.Loc[TooltipOpenUrl], RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                Visibility="{Binding IsUrl, Converter={StaticResource BoolToVis}}"
+                                                                Margin="0,0,4,0">
+                                                            <Path Data="{StaticResource IconExternalLink}"
+                                                                  Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                                                  Width="12" Height="12" Stretch="Uniform"/>
+                                                        </Button>
+
+                                                        <!-- Pin / Unpin -->
+                                                        <Button Style="{StaticResource CardActionButtonStyle}"
+                                                                Command="{Binding DataContext.TogglePinTextCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                CommandParameter="{Binding}"
+                                                                ToolTip="{Binding DataContext.Loc[TooltipPin], RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                Margin="0,0,4,0">
+                                                            <Path Data="{StaticResource IconPin}"
+                                                                  Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                                                  Width="12" Height="12" Stretch="Uniform"/>
+                                                        </Button>
+
+                                                        <!-- Copy -->
+                                                        <Button Style="{StaticResource CardActionButtonStyle}"
+                                                                Command="{Binding DataContext.CopyTextCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                CommandParameter="{Binding}"
+                                                                ToolTip="{Binding DataContext.Loc[TooltipCopy], RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                Margin="0,0,4,0">
+                                                            <Path Data="{StaticResource IconCopy}"
+                                                                  Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                                                  Width="12" Height="12" Stretch="Uniform"/>
+                                                        </Button>
+
+                                                        <!-- Delete -->
+                                                        <Button Style="{StaticResource CardDangerButtonStyle}"
+                                                                Command="{Binding DataContext.DeleteSingleTextCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                CommandParameter="{Binding}"
+                                                                ToolTip="{Binding DataContext.Loc[TooltipDeleteItem], RelativeSource={RelativeSource AncestorType=Window}}">
+                                                            <Path Data="{StaticResource IconTrash}"
+                                                                  Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                                                  Width="12" Height="12" Stretch="Uniform"/>
+                                                        </Button>
+                                                    </StackPanel>
+                                                </Grid>
+
+                                                <!-- Metadata Footer Row -->
+                                                <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,6,0,0" VerticalAlignment="Center">
+                                                    <!-- User Alias Pill -->
+                                                    <Border Background="{StaticResource AccentSoftBrush}"
+                                                            BorderBrush="{StaticResource AccentBrush}"
+                                                            BorderThickness="1"
+                                                            CornerRadius="4" Padding="5,1" Margin="0,0,6,0"
+                                                            Visibility="{Binding HasAlias, Converter={StaticResource BoolToVis}}">
+                                                        <TextBlock Text="{Binding Alias}"
+                                                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                                                   FontSize="10" FontWeight="SemiBold"/>
+                                                    </Border>
+
+                                                    <!-- Kind Badge -->
+                                                    <Border Background="#FF2B3140" CornerRadius="4" Padding="5,1" Margin="0,0,6,0">
+                                                        <TextBlock Text="{Binding KindBadge}"
+                                                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                                                   FontSize="10" FontWeight="SemiBold"/>
+                                                    </Border>
+
+                                                    <!-- Source App Pill -->
+                                                    <Border Background="#FF232938" CornerRadius="4" Padding="5,1" Margin="0,0,6,0"
+                                                            Visibility="{Binding HasSourceApp, Converter={StaticResource BoolToVis}}">
+                                                        <TextBlock Text="{Binding SourceAppLabel}"
+                                                                   Foreground="{StaticResource TextMutedBrush}"
+                                                                   FontSize="10"/>
+                                                    </Border>
+
+                                                    <!-- Pinned Pill -->
+                                                    <Border Background="{StaticResource PinGoldSoftBrush}"
+                                                            CornerRadius="4" Padding="4,1" Margin="0,0,6,0"
+                                                            Visibility="{Binding IsPinned, Converter={StaticResource BoolToVis}}">
+                                                        <Path Data="{StaticResource IconPin}" Fill="{StaticResource PinGoldBrush}"
+                                                              Width="10" Height="10" Stretch="Uniform"/>
+                                                    </Border>
+
+                                                    <!-- Meta Summary -->
+                                                    <TextBlock Text="{Binding MetaSummary}"
+                                                               Foreground="{StaticResource TextMutedBrush}"
+                                                               FontSize="11" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Grid>
+                                        </Grid>
+                                        <DataTemplate.Triggers>
+                                            <Trigger SourceName="CardRoot" Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="HoverActions" Property="Opacity" Value="1"/>
+                                            </Trigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+
+                            <!-- Empty State (Texts) -->
+                            <StackPanel Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                        IsHitTestVisible="False"
+                                        Visibility="{Binding IsTextsEmpty, Converter={StaticResource BoolToVis}}">
+                                <Path Data="{StaticResource IconClipboard}" Fill="{StaticResource BorderHoverBrush}"
+                                      Width="28" Height="28" Stretch="Uniform" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                <TextBlock Text="{Binding Loc[EmptyTextsTitle]}" Foreground="{StaticResource TextSecondaryBrush}"
+                                           FontSize="13" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{Binding Loc[EmptyTextsHint]}" Foreground="{StaticResource TextMutedBrush}"
+                                           FontSize="11.5" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- RIGHT COLUMN: 2-COLUMN SCREENSHOT & OCR GALLERY -->
+                    <Border Grid.Column="2"
+                            Background="{StaticResource SurfaceBgBrush}"
+                            BorderBrush="{StaticResource BorderSubtleBrush}"
+                            BorderThickness="1"
+                            CornerRadius="12"
+                            Padding="8,8,6,6">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <!-- Section Header -->
+                            <Grid Grid.Row="0" Margin="4,0,6,8">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Path Data="{StaticResource IconCamera}" Fill="{StaticResource AccentHoverBrush}"
+                                          Width="13" Height="13" Stretch="Uniform" Margin="0,0,6,0"/>
+                                    <TextBlock Text="{Binding Loc[SectionScreenshots]}"
+                                               Foreground="{StaticResource TextSecondaryBrush}"
+                                               FontSize="12" FontWeight="SemiBold"/>
+                                </StackPanel>
+                                <Border HorizontalAlignment="Right" Background="{StaticResource ControlBgBrush}"
+                                        CornerRadius="8" Padding="7,1">
+                                    <TextBlock Text="{Binding VisibleScreenshotsCount}"
+                                               Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" FontWeight="SemiBold"/>
+                                </Border>
+                            </Grid>
+
+                            <!-- Virtualized Screenshot & OCR List (Recycling mode, 320px low-RAM thumbnails) -->
+                            <ListBox Grid.Row="1"
+                                     x:Name="LstScreenshots"
+                                     ItemsSource="{Binding ScreenshotsView}"
+                                     ItemContainerStyle="{StaticResource ShotCardItemStyle}"
+                                     Background="Transparent"
+                                     BorderThickness="0"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                     ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                     ScrollViewer.CanContentScroll="True"
+                                     VirtualizingPanel.IsVirtualizing="True"
+                                     VirtualizingPanel.VirtualizationMode="Recycling"
+                                     PreviewKeyDown="ListBox_PreviewKeyDown">
+                                <ListBox.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <VirtualizingStackPanel Orientation="Vertical"/>
+                                    </ItemsPanelTemplate>
+                                </ListBox.ItemsPanel>
+
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid x:Name="ShotRoot"
+                                              Background="{StaticResource CardBgBrush}"
+                                              Cursor="Hand"
+                                              PreviewMouseLeftButtonDown="Screenshot_PreviewMouseLeftButtonDown"
+                                              PreviewMouseMove="Screenshot_PreviewMouseMove"
+                                              PreviewMouseLeftButtonUp="Screenshot_PreviewMouseLeftButtonUp"
+                                              MouseRightButtonUp="Screenshot_TogglePin"
+                                              ToolTipOpening="Screenshot_ToolTipOpening"
+                                              ToolTipClosing="Screenshot_ToolTipClosing"
+                                              ToolTipService.InitialShowDelay="350"
+                                              ToolTipService.ShowDuration="60000">
+
+                                            <!-- On-demand high-res Preview Tooltip (released on ToolTipClosing / Hide) -->
+                                            <Grid.ToolTip>
+                                                <ToolTip Background="Transparent" BorderThickness="0" Padding="0">
+                                                    <Border Background="#FA171A21" CornerRadius="10"
+                                                            BorderBrush="#FF3A4152" BorderThickness="1" Padding="8">
+                                                        <StackPanel MaxWidth="460">
+                                                            <Border CornerRadius="6" ClipToBounds="True" Background="#FF0D0F14">
+                                                                <Image Source="{Binding DisplayPreviewImage}" MaxWidth="444" MaxHeight="280" Stretch="Uniform"/>
+                                                            </Border>
+                                                            <Grid Margin="2,6,2,0">
+                                                                <TextBlock Text="{Binding Name}" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11.5" FontWeight="SemiBold"/>
+                                                                <TextBlock Text="{Binding ResolutionText}" Foreground="{StaticResource TextMutedBrush}" FontSize="11" HorizontalAlignment="Right"/>
+                                                            </Grid>
+                                                            <Border Margin="0,6,0,0" Padding="8,6" CornerRadius="6"
+                                                                    Background="#FF212632" BorderBrush="#FF32394A" BorderThickness="1"
+                                                                    Visibility="{Binding HasOcrText, Converter={StaticResource BoolToVis}}">
+                                                                <StackPanel>
+                                                                    <TextBlock Text="{Binding DataContext.Loc[OcrExtractedLabel], RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                               Foreground="{StaticResource AccentHoverBrush}" FontSize="10" FontWeight="SemiBold" Margin="0,0,0,3"/>
+                                                                    <TextBlock Text="{Binding OcrText}" Foreground="{StaticResource TextPrimaryBrush}"
+                                                                               FontSize="12" TextWrapping="Wrap" MaxHeight="130" TextTrimming="CharacterEllipsis"/>
+                                                                </StackPanel>
+                                                            </Border>
+                                                        </StackPanel>
+                                                    </Border>
+                                                </ToolTip>
+                                            </Grid.ToolTip>
+
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="126"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <!-- Left: Low-RAM 320px Thumbnail -->
+                                            <Grid Grid.Column="0" Height="78" ClipToBounds="True" Background="#FF12141A">
+                                                <Image Source="{Binding Image}" Stretch="UniformToFill" RenderOptions.BitmapScalingMode="HighQuality"/>
+
+                                                <!-- Pin Badge -->
+                                                <Border Background="#CC16181D" CornerRadius="5" Width="19" Height="19"
+                                                        HorizontalAlignment="Left" VerticalAlignment="Top" Margin="5"
+                                                        IsHitTestVisible="False"
+                                                        Visibility="{Binding IsPinned, Converter={StaticResource BoolToVis}}">
+                                                    <Path Data="{StaticResource IconPin}" Fill="{StaticResource PinGoldBrush}"
+                                                          Width="10" Height="10" Stretch="Uniform"
+                                                          HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                </Border>
+
+                                                <!-- Live OCR Scanning Overlay -->
+                                                <Border Background="#CC11131A"
+                                                        IsHitTestVisible="False"
+                                                        Visibility="{Binding IsOcrRunning, Converter={StaticResource BoolToVis}}">
+                                                    <Border Background="{StaticResource AccentBrush}" CornerRadius="8"
+                                                            Padding="7,2" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding DataContext.Loc[OcrRunning], RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                   Foreground="White" FontSize="10" FontWeight="SemiBold"/>
+                                                    </Border>
+                                                </Border>
+                                            </Grid>
+
+                                            <!-- Right: Metadata, OCR Preview & Hover Actions -->
+                                            <Grid Grid.Column="1" Margin="10,7,8,7">
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="*"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                </Grid.RowDefinitions>
+
+                                                <!-- Top row: Time, Resolution, Source App & OCR Badge -->
+                                                <Grid Grid.Row="0">
+                                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding TimeLabel}" Foreground="{StaticResource TextPrimaryBrush}" FontSize="11.5" FontWeight="SemiBold"/>
+                                                        <TextBlock Text=" · " Foreground="{StaticResource TextMutedBrush}" FontSize="11"
+                                                                   Visibility="{Binding ResolutionText, Converter={StaticResource NonEmptyToVis}}"/>
+                                                        <TextBlock Text="{Binding ResolutionText}" Foreground="{StaticResource TextMutedBrush}" FontSize="11"/>
+                                                        <Border Background="#FF232938" CornerRadius="4" Padding="4,0" Margin="6,0,0,0"
+                                                                Visibility="{Binding HasSourceApp, Converter={StaticResource BoolToVis}}">
+                                                            <TextBlock Text="{Binding SourceAppLabel}" Foreground="{StaticResource TextMutedBrush}" FontSize="9.5"/>
+                                                        </Border>
+                                                    </StackPanel>
+
+                                                    <Border HorizontalAlignment="Right" Background="{StaticResource AccentSoftBrush}"
+                                                            CornerRadius="4" Padding="5,1"
+                                                            Visibility="{Binding HasOcrText, Converter={StaticResource BoolToVis}}">
+                                                        <TextBlock Text="{Binding DataContext.Loc[OcrReadyBadge], RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                   Foreground="{StaticResource AccentHoverBrush}" FontSize="9.5" FontWeight="Bold"/>
+                                                    </Border>
+                                                </Grid>
+
+                                                <!-- Middle: Extracted OCR Preview -->
+                                                <TextBlock Grid.Row="1"
+                                                           Text="{Binding OcrPreview}"
+                                                           Foreground="{StaticResource TextSecondaryBrush}"
+                                                           FontSize="11.5"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           VerticalAlignment="Center"
+                                                           Margin="0,3,0,2"
+                                                           Visibility="{Binding HasOcrText, Converter={StaticResource BoolToVis}}"/>
+
+                                                <!-- Bottom: Hover Action Bar -->
+                                                <StackPanel x:Name="ShotHoverActions"
+                                                            Grid.Row="2"
+                                                            Orientation="Horizontal"
+                                                            HorizontalAlignment="Right"
+                                                            Opacity="0">
+                                                    <Button Style="{StaticResource CardActionButtonStyle}"
+                                                            Command="{Binding DataContext.RunOcrCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                            CommandParameter="{Binding}"
+                                                            ToolTip="{Binding DataContext.Loc[TooltipRunOcr], RelativeSource={RelativeSource AncestorType=Window}}"
+                                                            Margin="0,0,4,0">
+                                                        <Path Data="{StaticResource IconOcr}"
+                                                              Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                                              Width="12" Height="12" Stretch="Uniform"/>
+                                                    </Button>
+
+                                                    <Button Style="{StaticResource CardActionButtonStyle}"
+                                                            Command="{Binding DataContext.CopyOcrTextCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                            CommandParameter="{Binding}"
+                                                            ToolTip="{Binding DataContext.Loc[TooltipCopyOcr], RelativeSource={RelativeSource AncestorType=Window}}"
+                                                            Visibility="{Binding HasOcrText, Converter={StaticResource BoolToVis}}"
+                                                            Margin="0,0,4,0">
+                                                        <Path Data="{StaticResource IconCopy}"
+                                                              Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                                              Width="12" Height="12" Stretch="Uniform"/>
+                                                    </Button>
+
+                                                    <Button Style="{StaticResource CardActionButtonStyle}"
+                                                            Command="{Binding DataContext.CopyScreenshotCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                            CommandParameter="{Binding}"
+                                                            ToolTip="{Binding DataContext.Loc[TooltipCopyImage], RelativeSource={RelativeSource AncestorType=Window}}"
+                                                            Margin="0,0,4,0">
+                                                        <Path Data="{StaticResource IconImage}"
+                                                              Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                                              Width="12" Height="12" Stretch="Uniform"/>
+                                                    </Button>
+
+                                                    <Button Style="{StaticResource CardDangerButtonStyle}"
+                                                            Command="{Binding DataContext.DeleteSingleScreenshotCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                            CommandParameter="{Binding}"
+                                                            ToolTip="{Binding DataContext.Loc[TooltipDeleteItem], RelativeSource={RelativeSource AncestorType=Window}}">
+                                                        <Path Data="{StaticResource IconTrash}"
+                                                              Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                                              Width="11" Height="11" Stretch="Uniform"/>
+                                                    </Button>
+                                                </StackPanel>
+                                            </Grid>
+                                        </Grid>
+                                        <DataTemplate.Triggers>
+                                            <Trigger SourceName="ShotRoot" Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="ShotHoverActions" Property="Opacity" Value="1"/>
+                                            </Trigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+
+                            <!-- Empty State (Screenshots) -->
+                            <StackPanel Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                        IsHitTestVisible="False"
+                                        Visibility="{Binding IsScreenshotsEmpty, Converter={StaticResource BoolToVis}}">
+                                <Path Data="{StaticResource IconCamera}" Fill="{StaticResource BorderHoverBrush}"
+                                      Width="28" Height="28" Stretch="Uniform" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                <TextBlock Text="{Binding Loc[EmptyShotsTitle]}" Foreground="{StaticResource TextSecondaryBrush}"
+                                           FontSize="13" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{Binding Loc[EmptyShotsHint]}" Foreground="{StaticResource TextMutedBrush}"
+                                           FontSize="11.5" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="220"
+                                           HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </Grid>
+
+                <!-- ==================== ROW 4: SETTINGS DRAWER ==================== -->
+                <Border Grid.Row="4"
+                        x:Name="PnlSettingsDrawer"
+                        Visibility="Collapsed"
+                        Background="{StaticResource PanelBgBrush}"
+                        BorderBrush="{StaticResource BorderHoverBrush}"
+                        BorderThickness="1"
+                        CornerRadius="12"
+                        Margin="14,0,14,8"
+                        Padding="14,12">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="265">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="1.1*"/>
+                                <ColumnDefinition Width="18"/>
+                                <ColumnDefinition Width="1.05*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Left Settings Column: Toggle Switches & Excluded Apps -->
+                            <StackPanel Grid.Column="0">
+                                <CheckBox x:Name="ChkHideOnCopy"
+                                          Style="{StaticResource FluentToggleSwitchStyle}"
+                                          IsChecked="{Binding HideOnCopy}"
+                                          Content="{Binding Loc[HideOnCopy]}"/>
+                                <CheckBox x:Name="ChkAutoPaste"
+                                          Style="{StaticResource FluentToggleSwitchStyle}"
+                                          IsChecked="{Binding AutoPaste}"
+                                          Content="{Binding Loc[AutoPaste]}"/>
+                                <CheckBox x:Name="ChkStartWithWindows"
+                                          Style="{StaticResource FluentToggleSwitchStyle}"
+                                          IsChecked="{Binding StartWithWindows}"
+                                          Content="{Binding Loc[StartWithWindows]}"/>
+                                <CheckBox x:Name="ChkStartMinimized"
+                                          Style="{StaticResource FluentToggleSwitchStyle}"
+                                          IsChecked="{Binding StartMinimized}"
+                                          Content="{Binding Loc[StartMinimized]}"/>
+                                <CheckBox x:Name="ChkAutoOcr"
+                                          Style="{StaticResource FluentToggleSwitchStyle}"
+                                          IsChecked="{Binding AutoOcr}"
+                                          Content="{Binding Loc[AutoOcr]}"/>
+                                <CheckBox x:Name="ChkQuickPaste"
+                                          Style="{StaticResource FluentToggleSwitchStyle}"
+                                          IsChecked="{Binding QuickPasteEnabled}"
+                                          Content="{Binding Loc[QuickPasteEnabled]}"/>
+                                <CheckBox x:Name="ChkEncryptSession"
+                                          Style="{StaticResource FluentToggleSwitchStyle}"
+                                          IsChecked="{Binding EncryptSession}"
+                                          Content="{Binding Loc[EncryptSession]}"/>
+
+                                <!-- Excluded Apps Input -->
+                                <TextBlock Text="{Binding Loc[ExcludedAppsLabel]}"
+                                           Foreground="{StaticResource TextSecondaryBrush}"
+                                           FontSize="11.5" Margin="0,8,0,4"/>
+                                <Border Background="{StaticResource ControlBgBrush}"
+                                        BorderBrush="{StaticResource BorderSubtleBrush}"
+                                        BorderThickness="1" CornerRadius="7" Padding="8,4">
+                                    <Grid>
+                                        <TextBlock Text="{Binding Loc[ExcludedAppsPlaceholder]}"
+                                                   Foreground="{StaticResource TextMutedBrush}" FontSize="12"
+                                                   IsHitTestVisible="False" VerticalAlignment="Center"
+                                                   Visibility="{Binding ExcludedApps, Converter={StaticResource NonEmptyToVis}, ConverterParameter=invert}"/>
+                                        <TextBox Background="Transparent" Foreground="{StaticResource TextPrimaryBrush}"
+                                                 CaretBrush="{StaticResource AccentHoverBrush}"
+                                                 BorderThickness="0" FontSize="12"
+                                                 Text="{Binding ExcludedApps, UpdateSourceTrigger=PropertyChanged}"/>
+                                    </Grid>
+                                </Border>
+                            </StackPanel>
+
+                            <!-- Right Settings Column: Slider, Hotkey, OCR Lang, TTL, UI Lang, Updates -->
+                            <StackPanel Grid.Column="2">
+                                <!-- History Limit Slider -->
+                                <Grid Margin="0,0,0,8">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+                                    <Grid Grid.Row="0" Margin="0,0,0,3">
+                                        <TextBlock Text="{Binding Loc[HistoryLimit]}" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12"/>
+                                        <TextBlock Text="{Binding HistoryLimit}" Foreground="{StaticResource AccentHoverBrush}"
+                                                   FontSize="12" FontWeight="Bold" HorizontalAlignment="Right"/>
+                                    </Grid>
+                                    <Slider Grid.Row="1"
+                                            Style="{StaticResource FluentSliderStyle}"
+                                            Minimum="10" Maximum="200" TickFrequency="5" IsSnapToTickEnabled="True"
+                                            Value="{Binding HistoryLimit}"/>
+                                </Grid>
+
+                                <!-- Hotkey Capture -->
+                                <Grid Margin="0,0,0,3">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="{Binding Loc[ShortcutKey]}"
+                                               Foreground="{StaticResource TextSecondaryBrush}" FontSize="12"
+                                               VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                    <Border Grid.Column="1" Background="{StaticResource ControlBgBrush}"
+                                            BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="1"
+                                            CornerRadius="7" Padding="8,4">
+                                        <TextBox x:Name="TxtHotkeyCapture"
+                                                 Background="Transparent" Foreground="{StaticResource TextPrimaryBrush}"
+                                                 BorderThickness="0" IsReadOnly="True" CaretBrush="Transparent"
+                                                 Cursor="Hand" FontSize="12.5" FontWeight="SemiBold"
+                                                 VerticalAlignment="Center" TextAlignment="Center"
+                                                 GotFocus="TxtHotkeyCapture_GotFocus"
+                                                 LostFocus="TxtHotkeyCapture_LostFocus"
+                                                 PreviewKeyDown="TxtHotkeyCapture_PreviewKeyDown"/>
                                     </Border>
                                 </Grid>
-                            </Border>
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
-            </Border>
-        </Grid>
 
-        <Border Grid.Row="2" Name="PnlSettingsDrawer" Visibility="Collapsed" Background="#E6222222" CornerRadius="15" Margin="14,5,14,5" Padding="15" BorderBrush="#555555" BorderThickness="1">
-            <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,12" HorizontalAlignment="Center">
-                    <CheckBox Name="ChkHideOnCopy" IsChecked="{Binding HideOnCopy}" Content="{Binding Loc[HideOnCopy]}" Foreground="White" Margin="0,0,25,0"/>
-                    <CheckBox Name="ChkStartWithWindows" IsChecked="{Binding StartWithWindows}" Content="{Binding Loc[StartWithWindows]}" Foreground="White"/>
-                </StackPanel>
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,0" HorizontalAlignment="Center">
-                    <TextBlock x:Name="TxtShortcutLabel" Text="{Binding Loc[ShortcutKey]}" Foreground="White" VerticalAlignment="Center"/>
-                    <Border Background="#D92D2D2D" CornerRadius="8" BorderBrush="#555555" BorderThickness="1" Padding="10,5">
-                        <TextBox x:Name="TxtHotkeyCapture" Background="Transparent" Foreground="#E0E0E0"
-                                 BorderThickness="0" Width="160" IsReadOnly="True" CaretBrush="Transparent"
-                                 Cursor="Hand" VerticalAlignment="Center" TextAlignment="Center"
-                                 GotFocus="TxtHotkeyCapture_GotFocus"
-                                 LostFocus="TxtHotkeyCapture_LostFocus"
-                                 PreviewKeyDown="TxtHotkeyCapture_PreviewKeyDown"/>
-                    </Border>
-                </StackPanel>
-                <TextBlock x:Name="TxtQuickPasteHint" Foreground="#777777" FontSize="11"
-                           HorizontalAlignment="Center" Margin="0,6,0,0"/>
-                <StackPanel Orientation="Horizontal" Margin="0,12,0,0" HorizontalAlignment="Center">
-                    <TextBlock x:Name="TxtLanguageLabel" Text="{Binding Loc[Language]}" Foreground="White" VerticalAlignment="Center"/>
-                    <ComboBox x:Name="CmbLanguage" Width="100" Margin="5,0,0,0" SelectedIndex="{Binding LanguageIndex}">
-                        <ComboBoxItem Content="English"/>
-                        <ComboBoxItem Content="Türkçe"/>
-                    </ComboBox>
-                </StackPanel>
-                <StackPanel Orientation="Horizontal" Margin="0,12,0,0" HorizontalAlignment="Center">
-                    <TextBlock x:Name="TxtVersionLabel" Text="{Binding Loc[Version]}" Foreground="White" VerticalAlignment="Center"/>
-                    <TextBlock x:Name="TxtVersionValue" Text="{Binding VersionText}" Foreground="#B9BBBE" VerticalAlignment="Center" Margin="0,0,15,0"/>
-                    <Button x:Name="BtnCheckUpdate" Command="{Binding CheckUpdatesCommand}" Content="{Binding Loc[CheckUpdates]}"
-                            Background="#CC5865F2" Foreground="White" BorderBrush="#7289DA" BorderThickness="1"
-                            Padding="12,4" Cursor="Hand">
-                        <Button.Resources>
-                            <Style TargetType="Border">
-                                <Setter Property="CornerRadius" Value="8"/>
-                            </Style>
-                        </Button.Resources>
-                    </Button>
-                </StackPanel>
-                <TextBlock x:Name="TxtUpdateStatus" Text="{Binding UpdateStatus}" Foreground="#777777" FontSize="11"
-                           HorizontalAlignment="Center" Margin="0,6,0,0"/>
-            </StackPanel>
+                                <TextBlock x:Name="TxtQuickPasteHint" Foreground="{StaticResource TextMutedBrush}"
+                                           FontSize="11" Margin="0,2,0,2"/>
+
+                                <TextBlock Text="{Binding HotkeyConflictWarning}"
+                                           Foreground="{StaticResource WarningBrush}" FontSize="11"
+                                           Visibility="{Binding HotkeyConflictWarning, Converter={StaticResource NonEmptyToVis}}"
+                                           Margin="0,0,0,4"/>
+
+                                <!-- OCR Language & Auto-Expire TTL -->
+                                <Grid Margin="0,4,0,6">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="10"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="{Binding Loc[OcrLanguage]}" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11.5" Margin="0,0,0,3"/>
+                                        <ComboBox Style="{StaticResource FluentComboBoxStyle}"
+                                                  ItemsSource="{Binding OcrLanguages}"
+                                                  SelectedItem="{Binding SelectedOcrLanguage}"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="{Binding Loc[RetentionLabel]}" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11.5" Margin="0,0,0,3"/>
+                                        <ComboBox Style="{StaticResource FluentComboBoxStyle}"
+                                                  ItemsSource="{Binding RetentionOptions}"
+                                                  SelectedIndex="{Binding RetentionIndex}"/>
+                                    </StackPanel>
+                                </Grid>
+
+                                <!-- UI Language & Cache Folder -->
+                                <Grid Margin="0,2,0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="120"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="{Binding Loc[Language]}"
+                                               Foreground="{StaticResource TextSecondaryBrush}" FontSize="12"
+                                               VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <ComboBox Grid.Column="1" x:Name="CmbLanguage"
+                                              Style="{StaticResource FluentComboBoxStyle}"
+                                              SelectedIndex="{Binding LanguageIndex}">
+                                        <ComboBoxItem Content="English"/>
+                                        <ComboBoxItem Content="Türkçe"/>
+                                    </ComboBox>
+                                    <Button Grid.Column="2"
+                                            Style="{StaticResource SecondaryButtonStyle}"
+                                            Command="{Binding OpenCacheFolderCommand}"
+                                            Margin="8,0,0,0" HorizontalAlignment="Right">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Path Data="{StaticResource IconFolder}" Fill="{StaticResource TextSecondaryBrush}"
+                                                  Width="13" Height="13" Stretch="Uniform" Margin="0,0,6,0"/>
+                                            <TextBlock Text="{Binding Loc[OpenCacheFolder]}" FontSize="11.5"/>
+                                        </StackPanel>
+                                    </Button>
+                                </Grid>
+
+                                <!-- Version & Updates -->
+                                <Grid>
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Loc[Version]}" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,0,5,0"/>
+                                        <TextBlock Text="{Binding VersionText}" Foreground="{StaticResource TextPrimaryBrush}" FontSize="12" FontWeight="SemiBold"/>
+                                    </StackPanel>
+                                    <Button x:Name="BtnCheckUpdate"
+                                            HorizontalAlignment="Right"
+                                            Style="{StaticResource PrimaryButtonStyle}"
+                                            Command="{Binding CheckUpdatesCommand}"
+                                            Content="{Binding Loc[CheckUpdates]}"/>
+                                </Grid>
+
+                                <TextBlock x:Name="TxtUpdateStatus"
+                                           Text="{Binding UpdateStatus}"
+                                           Foreground="{StaticResource TextMutedBrush}"
+                                           FontSize="11" Margin="0,5,0,0"
+                                           Visibility="{Binding UpdateStatus, Converter={StaticResource NonEmptyToVis}}"/>
+                            </StackPanel>
+                        </Grid>
+                    </ScrollViewer>
+                </Border>
+
+                <!-- ==================== ROW 5: SUBTLE FOOTER SHORTCUT BAR ==================== -->
+                <Border Grid.Row="5"
+                        BorderBrush="{StaticResource DividerBrush}"
+                        BorderThickness="0,1,0,0"
+                        Padding="16,6">
+                    <TextBlock Text="{Binding Loc[FooterShortcutsHint]}"
+                               Foreground="{StaticResource TextMutedBrush}"
+                               FontSize="11"
+                               HorizontalAlignment="Center"/>
+                </Border>
+
+                <!-- ==================== FLOATING TOAST OVERLAY ==================== -->
+                <Border Grid.Row="3" Grid.RowSpan="3"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Bottom"
+                        Margin="0,0,0,28"
+                        Padding="14,7"
+                        CornerRadius="18"
+                        Background="#FA1F2430"
+                        BorderThickness="1"
+                        IsHitTestVisible="False"
+                        Visibility="{Binding IsToastVisible, Converter={StaticResource BoolToVis}}">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding ToastIsWarning}" Value="True">
+                                    <Setter Property="BorderBrush" Value="{StaticResource WarningBrush}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <Border.Effect>
+                        <DropShadowEffect Color="Black" BlurRadius="14" ShadowDepth="3" Opacity="0.45"/>
+                    </Border.Effect>
+                    <TextBlock Text="{Binding ToastMessage}"
+                               Foreground="{StaticResource TextPrimaryBrush}"
+                               FontSize="12" FontWeight="Medium"/>
+                </Border>
+            </Grid>
         </Border>
     </Grid>
 </Window>

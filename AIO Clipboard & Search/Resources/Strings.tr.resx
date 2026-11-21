@@ -15,23 +15,53 @@
   <data name="HideOnCopy" xml:space="preserve">
     <value>Seçimde menüyü otomatik gizle</value>
   </data>
+  <data name="AutoPaste" xml:space="preserve">
+    <value>Seçimde aktif uygulamaya otomatik yapıştır</value>
+  </data>
   <data name="StartWithWindows" xml:space="preserve">
     <value>Windows ile başlat</value>
   </data>
+  <data name="StartMinimized" xml:space="preserve">
+    <value>Sistem tepsisinde küçültülmüş başlat</value>
+  </data>
+  <data name="AutoOcr" xml:space="preserve">
+    <value>Yeni yakalamalarda OCR'ı otomatik çalıştır</value>
+  </data>
+  <data name="QuickPasteEnabled" xml:space="preserve">
+    <value>Hızlı yapıştırma kısayollarını etkinleştir (1 / 2 / 3)</value>
+  </data>
+  <data name="HistoryLimit" xml:space="preserve">
+    <value>Geçmiş limiti:</value>
+  </data>
   <data name="ShortcutKey" xml:space="preserve">
-    <value>Kısayol Tuşu: </value>
+    <value>Kısayol Tuşu:</value>
   </data>
   <data name="Language" xml:space="preserve">
-    <value>Dil: </value>
+    <value>Dil:</value>
   </data>
   <data name="TrayOpen" xml:space="preserve">
     <value>Aç</value>
+  </data>
+  <data name="TrayPause" xml:space="preserve">
+    <value>İzlemeyi Duraklat</value>
+  </data>
+  <data name="TrayResume" xml:space="preserve">
+    <value>İzlemeyi Sürdür</value>
+  </data>
+  <data name="TrayClearUnpinned" xml:space="preserve">
+    <value>Sabitsizleri Temizle</value>
+  </data>
+  <data name="TrayOpenCache" xml:space="preserve">
+    <value>Önbellek Klasörünü Aç</value>
+  </data>
+  <data name="TraySettings" xml:space="preserve">
+    <value>Ayarlar</value>
   </data>
   <data name="TrayExit" xml:space="preserve">
     <value>Çıkış</value>
   </data>
   <data name="InitialMsg" xml:space="preserve">
-    <value>AIO OCR Pano Aktif! İşlemek için görüntü yakalayın... 🚀</value>
+    <value>AIO Hybrid Clipboard aktif. Metin kopyalayın veya OCR ile görüntü yakalamak için Win+Shift+S kullanın.</value>
   </data>
   <data name="OcrError" xml:space="preserve">
     <value>OCR Hatası</value>
@@ -42,8 +72,17 @@
   <data name="OcrNoText" xml:space="preserve">
     <value>Bu görüntüde okunabilir metin bulunamadı.</value>
   </data>
+  <data name="OcrRunning" xml:space="preserve">
+    <value>Taranıyor...</value>
+  </data>
+  <data name="OcrReadyBadge" xml:space="preserve">
+    <value>OCR</value>
+  </data>
+  <data name="OcrExtractedLabel" xml:space="preserve">
+    <value>Çıkarılan Metin</value>
+  </data>
   <data name="Version" xml:space="preserve">
-    <value>Sürüm: </value>
+    <value>Sürüm:</value>
   </data>
   <data name="CheckUpdates" xml:space="preserve">
     <value>Güncellemeleri denetle</value>
@@ -66,7 +105,253 @@
   <data name="UpdateDownloading" xml:space="preserve">
     <value>Güncelleme indiriliyor... Uygulama yeniden başlatılacak.</value>
   </data>
+  <data name="UpdateDownloadingProgress" xml:space="preserve">
+    <value>Güncelleme indiriliyor... %{0:0}</value>
+  </data>
   <data name="UpdateFailed" xml:space="preserve">
     <value>Güncelleme denetimi başarısız. Lütfen sonra tekrar deneyin.</value>
+  </data>
+  <data name="SearchPlaceholder" xml:space="preserve">
+    <value>Pano ve OCR metinlerinde ara...</value>
+  </data>
+  <data name="FilterAll" xml:space="preserve">
+    <value>Tümü</value>
+  </data>
+  <data name="FilterPinned" xml:space="preserve">
+    <value>Sabitli</value>
+  </data>
+  <data name="FilterLinks" xml:space="preserve">
+    <value>Bağlantı</value>
+  </data>
+  <data name="FilterCode" xml:space="preserve">
+    <value>Kod</value>
+  </data>
+  <data name="FilterColors" xml:space="preserve">
+    <value>Renk</value>
+  </data>
+  <data name="SectionTexts" xml:space="preserve">
+    <value>Pano</value>
+  </data>
+  <data name="SectionScreenshots" xml:space="preserve">
+    <value>Ekran Görüntüleri &amp; OCR</value>
+  </data>
+  <data name="EmptyTextsTitle" xml:space="preserve">
+    <value>Pano öğesi yok</value>
+  </data>
+  <data name="EmptyTextsHint" xml:space="preserve">
+    <value>Herhangi bir metin kopyalayın veya aktif filtreyi temizleyin.</value>
+  </data>
+  <data name="EmptyShotsTitle" xml:space="preserve">
+    <value>Henüz ekran görüntüsü yok</value>
+  </data>
+  <data name="EmptyShotsHint" xml:space="preserve">
+    <value>Yakalamak için Win+Shift+S kullanın. OCR otomatik çalışır.</value>
+  </data>
+  <data name="OpenCacheFolder" xml:space="preserve">
+    <value>Önbellek Klasörünü Aç</value>
+  </data>
+  <data name="ClearUnpinned" xml:space="preserve">
+    <value>Sabitsizleri Temizle</value>
+  </data>
+  <data name="ClearUnpinnedConfirm" xml:space="preserve">
+    <value>Sabitlenmemiş tüm metin ve ekran görüntüsü kayıtları silinsin mi?</value>
+  </data>
+  <data name="ClearUnpinnedTitle" xml:space="preserve">
+    <value>Geçmişi Temizle</value>
+  </data>
+  <data name="HotkeyPressKeys" xml:space="preserve">
+    <value>Kısayol tuşlarına basın...</value>
+  </data>
+  <data name="HotkeyConflict" xml:space="preserve">
+    <value>Kısayol başka bir uygulama tarafından kullanılıyor.</value>
+  </data>
+  <data name="QuickPasteHint" xml:space="preserve">
+    <value>Hızlı yapıştır: {0}+1 / {0}+2 / {0}+3</value>
+  </data>
+  <data name="QuickPasteDisabledHint" xml:space="preserve">
+    <value>Hızlı yapıştırma kısayolları devre dışı.</value>
+  </data>
+  <data name="PauseMonitoring" xml:space="preserve">
+    <value>İzlemeyi duraklat (Gizli mod)</value>
+  </data>
+  <data name="ResumeMonitoring" xml:space="preserve">
+    <value>İzlemeyi sürdür</value>
+  </data>
+  <data name="PausedBanner" xml:space="preserve">
+    <value>Gizli mod aktif — yeni kopyalamalar kaydedilmiyor</value>
+  </data>
+  <data name="PrivacyShieldTip" xml:space="preserve">
+    <value>Şifre yöneticileri ve gizli panolar otomatik olarak yok sayılır</value>
+  </data>
+  <data name="TooltipEditMode" xml:space="preserve">
+    <value>Çoklu seçim düzenleme modu</value>
+  </data>
+  <data name="TooltipDeleteSelected" xml:space="preserve">
+    <value>Seçili öğeleri sil (Del)</value>
+  </data>
+  <data name="TooltipClearUnpinned" xml:space="preserve">
+    <value>Sabitlenmemiş tüm öğeleri temizle</value>
+  </data>
+  <data name="TooltipSettings" xml:space="preserve">
+    <value>Ayarlar</value>
+  </data>
+  <data name="TooltipClearSearch" xml:space="preserve">
+    <value>Aramayı temizle</value>
+  </data>
+  <data name="TooltipPin" xml:space="preserve">
+    <value>Sabitle / Kaldır (Sağ tık veya Ctrl+P)</value>
+  </data>
+  <data name="TooltipCopy" xml:space="preserve">
+    <value>Panoya kopyala (Enter)</value>
+  </data>
+  <data name="TooltipOpenUrl" xml:space="preserve">
+    <value>Bağlantıyı tarayıcıda aç</value>
+  </data>
+  <data name="TooltipDeleteItem" xml:space="preserve">
+    <value>Öğeyi sil</value>
+  </data>
+  <data name="TooltipRunOcr" xml:space="preserve">
+    <value>Metin çıkar (OCR)</value>
+  </data>
+  <data name="TooltipCopyOcr" xml:space="preserve">
+    <value>Çıkarılan OCR metnini kopyala</value>
+  </data>
+  <data name="TooltipCopyImage" xml:space="preserve">
+    <value>Görseli panoya kopyala (Shift+Enter)</value>
+  </data>
+  <data name="ToastCopied" xml:space="preserve">
+    <value>Panoya kopyalandı</value>
+  </data>
+  <data name="ToastImageCopied" xml:space="preserve">
+    <value>Görsel panoya kopyalandı</value>
+  </data>
+  <data name="ToastOcrCopied" xml:space="preserve">
+    <value>OCR metni çıkarıldı ve kopyalandı</value>
+  </data>
+  <data name="ToastOcrNoText" xml:space="preserve">
+    <value>Okunabilir metin algılanamadı</value>
+  </data>
+  <data name="ToastPaused" xml:space="preserve">
+    <value>Pano izleme duraklatıldı</value>
+  </data>
+  <data name="ToastResumed" xml:space="preserve">
+    <value>Pano izleme devam ediyor</value>
+  </data>
+  <data name="ToastCleared" xml:space="preserve">
+    <value>Sabitlenmemiş geçmiş temizlendi</value>
+  </data>
+  <data name="ToastNothingToClear" xml:space="preserve">
+    <value>Temizlenecek sabitlenmemiş öğe yok</value>
+  </data>
+  <data name="ToastHotkeyConflict" xml:space="preserve">
+    <value>Kısayol çakışması — başka bir kombinasyon seçin</value>
+  </data>
+  <data name="ToastHotkeySaved" xml:space="preserve">
+    <value>Kısayol güncellendi</value>
+  </data>
+  <data name="SettingsTitle" xml:space="preserve">
+    <value>Ayarlar</value>
+  </data>
+  <data name="FooterShortcutsHint" xml:space="preserve">
+    <value>Enter: Kopyala · Shift+Enter: Yapıştır · F2: Başlık · Ctrl+P: Sabitle · Del: Sil · Esc: Kapat</value>
+  </data>
+  <data name="OcrLanguage" xml:space="preserve">
+    <value>OCR Dili:</value>
+  </data>
+  <data name="OcrLanguageAuto" xml:space="preserve">
+    <value>Otomatik (Windows profili)</value>
+  </data>
+  <data name="EncryptSession" xml:space="preserve">
+    <value>Geçmişi diskte şifrele (DPAPI)</value>
+  </data>
+  <data name="RetentionLabel" xml:space="preserve">
+    <value>Sabitsizleri otomatik sil:</value>
+  </data>
+  <data name="RetentionNever" xml:space="preserve">
+    <value>Asla</value>
+  </data>
+  <data name="RetentionDaysFormat" xml:space="preserve">
+    <value>{0} gün</value>
+  </data>
+  <data name="ExcludedAppsLabel" xml:space="preserve">
+    <value>Hariç tutulan uygulamalar (virgülle .exe):</value>
+  </data>
+  <data name="ExcludedAppsPlaceholder" xml:space="preserve">
+    <value>örn. KeePassXC.exe, mstsc.exe</value>
+  </data>
+  <data name="MenuPin" xml:space="preserve">
+    <value>Sabitle / Kaldır</value>
+  </data>
+  <data name="MenuSetAlias" xml:space="preserve">
+    <value>Başlık / Etiket Ver...</value>
+  </data>
+  <data name="MenuTransform" xml:space="preserve">
+    <value>Dönüştür &amp; Kopyala</value>
+  </data>
+  <data name="TransformFormatJson" xml:space="preserve">
+    <value>JSON Biçimlendir</value>
+  </data>
+  <data name="TransformMinifyJson" xml:space="preserve">
+    <value>JSON Sıkıştır</value>
+  </data>
+  <data name="TransformSingleLine" xml:space="preserve">
+    <value>Tek Satıra İndir</value>
+  </data>
+  <data name="TransformUpper" xml:space="preserve">
+    <value>BÜYÜK HARF</value>
+  </data>
+  <data name="TransformLower" xml:space="preserve">
+    <value>küçük harf</value>
+  </data>
+  <data name="TransformTrimLines" xml:space="preserve">
+    <value>Satır Boşluklarını Temizle</value>
+  </data>
+  <data name="TransformUrlDecode" xml:space="preserve">
+    <value>URL Çöz (Decode)</value>
+  </data>
+  <data name="TransformUrlEncode" xml:space="preserve">
+    <value>URL Kodla (Encode)</value>
+  </data>
+  <data name="MenuSavePng" xml:space="preserve">
+    <value>PNG Olarak Farklı Kaydet...</value>
+  </data>
+  <data name="MenuEditOcr" xml:space="preserve">
+    <value>OCR Metnini Düzenle &amp; Kopyala...</value>
+  </data>
+  <data name="AliasDialogTitle" xml:space="preserve">
+    <value>Öğe Başlığı</value>
+  </data>
+  <data name="AliasDialogPrompt" xml:space="preserve">
+    <value>Bu kayıt için kısa aranabilir etiket (temizlemek için boş bırakın):</value>
+  </data>
+  <data name="EditOcrDialogTitle" xml:space="preserve">
+    <value>Çıkarılan OCR Metnini Düzenle</value>
+  </data>
+  <data name="EditOcrDialogPrompt" xml:space="preserve">
+    <value>OCR metnini düzeltin (kaydet ve kopyala için Ctrl+Enter):</value>
+  </data>
+  <data name="BtnSave" xml:space="preserve">
+    <value>Kaydet</value>
+  </data>
+  <data name="BtnCancel" xml:space="preserve">
+    <value>İptal</value>
+  </data>
+  <data name="ToastTransformed" xml:space="preserve">
+    <value>Dönüştürüldü ve kopyalandı</value>
+  </data>
+  <data name="ToastInvalidJson" xml:space="preserve">
+    <value>Geçerli JSON değil</value>
+  </data>
+  <data name="ToastAliasSaved" xml:space="preserve">
+    <value>Başlık güncellendi</value>
+  </data>
+  <data name="ToastPngSaved" xml:space="preserve">
+    <value>Görsel kaydedildi</value>
+  </data>
+  <data name="ToastEncryptionOn" xml:space="preserve">
+    <value>Oturum şifreleme açıldı (DPAPI)</value>
+  </data>
+  <data name="ToastEncryptionOff" xml:space="preserve">
+    <value>Oturum şifreleme kapatıldı</value>
   </data>
 </root>
