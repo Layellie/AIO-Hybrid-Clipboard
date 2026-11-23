@@ -145,3 +145,5 @@ Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) first.
 ## License
 
 [MIT](LICENSE) — © 2026 SAMET KAŞMER AKA LAYE77IE
+
+Made by Samet Kaşmer · [layellie.dev](https://layellie.dev)
