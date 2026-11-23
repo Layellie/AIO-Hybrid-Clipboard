@@ -91,3 +91,5 @@ Katkılar memnuniyetle karşılanır. Başlamadan önce [CONTRIBUTING.md](CONTRI
 ## Lisans
 
 [MIT](LICENSE) — © 2026 SAMET KAŞMER AKA LAYE77IE
+
+Geliştiren: Samet Kaşmer · [layellie.dev](https://layellie.dev)
